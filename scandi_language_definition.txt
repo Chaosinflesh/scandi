@@ -1,0 +1,126 @@
+Neil Bradley's Programming Language: scandi
+===========================================
+
+Having created my own CPU and assembler, I have been given the challenge
+of creating my own programming language to use on it. This file is my
+attempt at a language specification.
+
+OVERVIEW
+========
+
+Uses scandinavian maths (e.g. `$a 3 7 + 5 * =` makes $a equal 50)
+Variables prepended with $
+Functions are operands
+Stack prior to operand can be any size and may include other operands
+Scope is defined by indentation
+Lines terminated by either function or assignment at the end of a line
+(Variables | values at the end of a line carry over)
+Most operators etc. are provided by functions
+Variables disappear when all references go out of scope or are reassigned
+Functions and variables only have to be defined within scope, not prior to use
+Functions and variables within scopes cannot share names
+Raw data type is 32-bit binary
+Variables can have functions added as children via declaration in child scope
+Anything not specified can be defined [e.g. in stdlib.scandi]
+
+STRUCTURE*
+=========
+PROGRAM			FILE*
+FILE			SCOPE*
+SCOPE			[LABEL | VAR_DEC | FN_DEC | INSTRUCTION | FN_RET]*
+LABEL			\<name> [SCOPE]
+VAR_DEC			[$]$<name> [{INSTRUCTION | VAR_DEC} ASSIGNMENT] [SCOPE]
+FN_DEC			[$<variable>]* [@]@<name> {INSTRUCTION | SCOPE}
+FN_RET			<function> [INSTRUCTION] = | :
+INSTRUCTION		[[DATA | (DATA)]]* [INSTRUCTION] OPERATOR
+DATA			<variable> | <function> | ADDRESS | VALUE
+ADDRESS			_<hexadecimal>
+OPERATOR		<function> | <label> | ASSIGNMENT | ? | ?: | < | > | ?< | ?>
+                | + | - | * | / | \ | ~| & | | | ^ | <- | -> | >> | % | }
+ASSIGNMENT		= | :
+VALUE			4040 | '"'"string data"'"' | x1234AF... | NULL | TRUE | FALSE
+
+* This is a work in progress. See examples for how it is intended to work.
+
+
+PREFIXES
+-------------------------------------------------------------------------------
+>				Label
+$				Variable in this scope
+$$				New variable, but in parent scope
+@				Function in this scope
+@@				Function in parent scope
+_				Address, in hexadecimal
+`				Comment (rest of line ignored)
+
+
+ASSIGNMENTS
+-------------------------------------------------------------------------------
+=				Copy Assignment [shallow]
+:				Reference Assignment
+
+
+VARIABLES
+--------------------------------------------------------------------------------
+_<address>      memory address
+
+[$]$name        Defines a variable. All variables are table-based objects.
+                variables are restricted to their scope. $$ defines a variable
+				in the parent scope, with a new instance.
+
+name.<child>    Child objects are referenced by name or index. At the first
+                instance in a chain an object doesn't exist, null is returned.
+				If referenced without $, must be a function.
+
+name[]          Gets all direct variable children of the variable.
+
+name!           Get how many variable children there are for the variable.
+
+
+DATA FORMATS
+--------------------------------------------------------------------------------
+32-bit          value, in decimal
+
+"'text"'"'      String within quotes -> this produces 'text"
+
+#blob           raw contiguous hexadecimal data
+
+
+FUNCTIONS
+--------------------------------------------------------------------------------
+[$param ...] [@]@name	Define a function. Parameter names are allocated to
+                        provided parameters in order defined. Functions don't
+						have to consume all variables on the stack, but must
+						use them contiguously from the right [top].
+
+.<param>                References a parameter
+
+[]                      Gets all parameters of the function
+
+!                       Get how many parameters were passed into the function.
+
+name [var ...] <=:>     return assignment, with either copy or reference
+
+[var ...] name          Calls the specified function, with the stack
+
+
+OPERATORS
+--------------------------------------------------------------------------------
+}               with (add file to current scope)
+=               Copy Assignment [full variable, including functions]
+:               Reference Assignment
+)				negative [the preceding ( is ignored]
+~				complement
+&               and
+|               or
+^               xor
++               addition
+-               subtraction
+*               multiply
+/               divide
+%               modulus
+<-              shift left
+->              shift right
+>>              signed shift right
+
+

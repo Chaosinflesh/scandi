@@ -1,0 +1,20 @@
+` Advent of Code 2021.1a
+
+$count 0 =
+$last 0 =
+
+\start
+	$read next =
+	read null ?
+		result
+	read last >
+		count (1) -		` This is the same as 1 +
+	last read =
+	start
+
+\result
+_#FC8 count =
+
+@next
+	next _#FC4 =
+
