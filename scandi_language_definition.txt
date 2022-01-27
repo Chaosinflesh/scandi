@@ -38,7 +38,7 @@ ADDRESS			_<hexadecimal>
 OPERATOR		<function> | <label> | ASSIGNMENT | ? | ?: | < | > | ?< | ?>
                 | + | - | * | / | \ | ~| & | | | ^ | <- | -> | >> | % | }
 ASSIGNMENT		= | :
-VALUE			4040 | '"'"string data"'"' | x1234AF... | NULL | TRUE | FALSE
+VALUE			4040 | '"'"string data"'"' | x1234AF... | ()
 
 * This is a work in progress. See examples for how it is intended to work.
 
@@ -52,12 +52,8 @@ $$				New variable, but in parent scope
 @@				Function in parent scope
 _				Address, in hexadecimal
 `				Comment (rest of line ignored)
-
-
-ASSIGNMENTS
--------------------------------------------------------------------------------
-=				Copy Assignment [shallow]
-:				Reference Assignment
+#				A hexadecimal number
+\				A label
 
 
 VARIABLES
@@ -75,6 +71,8 @@ name.<child>    Child objects are referenced by name or index. At the first
 name[]          Gets all direct variable children of the variable.
 
 name!           Get how many variable children there are for the variable.
+
+()				Empty braces are no value, or null.
 
 
 DATA FORMATS
@@ -107,8 +105,8 @@ name [var ...] <=:>     return assignment, with either copy or reference
 OPERATORS
 --------------------------------------------------------------------------------
 }               with (add file to current scope)
-=               Copy Assignment [full variable, including functions]
-:               Reference Assignment
+=               Copy Assignment [full object, including functions]
+:               Reference Assignment, includes functions
 )				negative [the preceding ( is ignored]
 ~				complement
 &               and
@@ -124,3 +122,14 @@ OPERATORS
 >>              signed shift right
 
 
+COMPARATORS
+--------------------------------------------------------------------------------
+If a comparator returns a 0, that is considered TRUE, else FALSE. If FALSE, the
+next instructions or scope, as appropriate, is skipped.
+
+?			Equals
+?:			Reference Equals
+<			Less than
+>			Greater than
+?<			Less than or equal
+?>			Greater than or equal

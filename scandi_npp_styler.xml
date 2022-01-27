@@ -1,5 +1,5 @@
 <NotepadPlus>
-    <UserLang name="scandi" ext=".scandi" udlVersion="2.1">
+    <UserLang name="scandi" ext="scandi" udlVersion="2.1">
         <Settings>
             <Global caseIgnored="yes" allowFoldOfComments="no" foldCompact="no" forcePureLC="0" decimalSeparator="0" />
             <Prefix Keywords1="yes" Keywords2="yes" Keywords3="yes" Keywords4="no" Keywords5="yes" Keywords6="no" Keywords7="no" Keywords8="no" />
@@ -13,7 +13,7 @@
             <Keywords name="Numbers, suffix1"></Keywords>
             <Keywords name="Numbers, suffix2"></Keywords>
             <Keywords name="Numbers, range"></Keywords>
-            <Keywords name="Operators1">! .</Keywords>
+            <Keywords name="Operators1">[] ! .</Keywords>
             <Keywords name="Operators2">= : ~ &amp; | ^ + - * / % &lt;- -&gt; &gt;&gt; ? ?: &lt; &gt; ?&lt; ?&gt; </Keywords>
             <Keywords name="Folders in code1, open"></Keywords>
             <Keywords name="Folders in code1, middle"></Keywords>
@@ -27,9 +27,9 @@
             <Keywords name="Keywords1">\</Keywords>
             <Keywords name="Keywords2">_ #</Keywords>
             <Keywords name="Keywords3">$</Keywords>
-            <Keywords name="Keywords4">null true false</Keywords>
+            <Keywords name="Keywords4">null</Keywords>
             <Keywords name="Keywords5">@</Keywords>
-            <Keywords name="Keywords6">children count</Keywords>
+            <Keywords name="Keywords6"></Keywords>
             <Keywords name="Keywords7"></Keywords>
             <Keywords name="Keywords8"></Keywords>
             <Keywords name="Delimiters">00( 01 02) 03 04 05 06{ 07 08} 09 10 11 12&quot; 13 14&quot; 15 16 17 18&apos; 19 20&apos; 21 22 23</Keywords>
