@@ -68,6 +68,8 @@ name.<child>    Child objects are referenced by name or index. At the first
                 instance in a chain an object doesn't exist, null is returned.
 				If referenced without $, must be a function.
 
+name[index]		Get indexed value.
+
 name[]          Gets all direct variable children of the variable.
 
 name!           Get how many variable children there are for the variable.
@@ -92,6 +94,8 @@ FUNCTIONS
 						use them contiguously from the right [top].
 
 .<param>                References a parameter
+
+[index]                 Get the parameter by index
 
 []                      Gets all parameters of the function
 
