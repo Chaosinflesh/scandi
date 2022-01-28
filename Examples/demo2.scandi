@@ -1,0 +1,56 @@
+` demo2.scandi
+` ------------
+` By Neil Bradley
+`
+` The purpose of this file is to show how imports work, within demo1.scandi.
+
+` The function print is not declared to take any parameters. Functions in scandi
+` are always passed the full stack, but only make use of those they wish to.
+` Because it is a stack, the indexing works from right-to left, with index 0
+` being the item closest to the function and thus at the top of the stack.
+@print
+
+    ` It is necessary to introduce a new scope via indentation after the
+    ` function declaration. This is because, if the new scope is not declared,
+    ` following instructions will be considered to belong to the parent scope,
+    ` and the function body empty. Empty lines to not count towards scope
+    ` calculations.
+    
+    ` Variables declared within functions may not escape function scope. If the
+    ` value of a variable needs to persist between invocations, a functor should
+    ` be used.
+    $count 0 =
+    ` scandi doesn't have a loop construct (but that could be provided by a
+    ` library), so instead we implement it manually here. This code rewinds from
+    ` the top of the stack, until the stack is exhausted.
+    \loop
+    
+        ` Index values called without a preceding variable reference the current
+        ` object. In a variable, this my be array values. In a function, it is
+        ` parameters. And from a memory address, it is offset values.
+        $output [count] =
+        
+        ` This is a test for null. In scandi, null is returned if an object in
+        ` the call chain does not exist.
+        output () ?
+        
+            ` The scope change is not necessary here, but just helps to make the
+            ` code look tidier. Whilst the end location may not seem to have
+            ` been declared yet, it is in fact at a higher scope, and thus
+            ` scandi already knows about it, and this call valid. So even if the
+            ` preceding lines in the loop were at the same scope as \loop, this
+            ` statement has to be indented.
+            end
+            
+        ` Because this example is targeting my 8-bit CPU, this writes the output
+        ` to the specified memory address, which in this instance effectively
+        ` writes to stdout.
+        _#FC8 output =
+        
+        ` The manual implementation of the loop increment.
+        count 1 +
+        loop
+    
+    \end
+
+` The function is complete as the scope has returned back to 0.

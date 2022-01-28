@@ -1,139 +1,79 @@
-Neil Bradley's Programming Language: scandi
-===========================================
-
-Having created my own CPU and assembler, I have been given the challenge
-of creating my own programming language to use on it. This file is my
-attempt at a language specification.
+scandi : stack-based programming language
+=========================================
 
 OVERVIEW
 ========
 
-Uses scandinavian maths (e.g. `$a 3 7 + 5 * =` makes $a equal 50)
-Variables prepended with $
-Functions are operands
-Stack prior to operand can be any size and may include other operands
-Scope is defined by indentation
-Lines terminated by either function or assignment at the end of a line
-(Variables | values at the end of a line carry over)
-Most operators etc. are provided by functions
-Variables disappear when all references go out of scope or are reassigned
-Functions and variables only have to be defined within scope, not prior to use
-Functions and variables within scopes cannot share names
-Raw data type is 32-bit binary
-Variables can have functions added as children via declaration in child scope
-Anything not specified can be defined [e.g. in stdlib.scandi]
+scandi is a language I created to target my 8-bit CPU (see
+https://github.com/Chaosinflesh/8-bit).
 
-STRUCTURE*
-=========
-PROGRAM			FILE*
-FILE			SCOPE*
-SCOPE			[LABEL | VAR_DEC | FN_DEC | INSTRUCTION | FN_RET]*
-LABEL			\<name> [SCOPE]
-VAR_DEC			[$]$<name> [{INSTRUCTION | VAR_DEC} ASSIGNMENT] [SCOPE]
-FN_DEC			[$<variable>]* [@]@<name> {INSTRUCTION | SCOPE}
-FN_RET			<function> [INSTRUCTION] = | :
-INSTRUCTION		[[DATA | (DATA)]]* [INSTRUCTION] OPERATOR
-DATA			<variable> | <function> | ADDRESS | VALUE
-ADDRESS			_<hexadecimal>
-OPERATOR		<function> | <label> | ASSIGNMENT | ? | ?: | < | > | ?< | ?>
-                | + | - | * | / | \ | ~| & | | | ^ | <- | -> | >> | % | }
-ASSIGNMENT		= | :
-VALUE			4040 | '"'"string data"'"' | x1234AF... | ()
-
-* This is a work in progress. See examples for how it is intended to work.
+* Based on so-called 'swedish maths' principles, where operands form a
+stack that is provided to operators, which pop operands, and push
+results as further operands.
+* No keywords, uses symbols to identify declarations
+* Scope is determined by indentation
+* Lines must end with an operator
+* Functions can be declared anywhere within scope
+* Variables must be declared within either parent scope, or before use
+* Variables, functions and labels may not share names within scope
+* 3 data types: number, "String" and raw binary data.
 
 
-PREFIXES
--------------------------------------------------------------------------------
->				Label
-$				Variable in this scope
-$$				New variable, but in parent scope
-@				Function in this scope
-@@				Function in parent scope
-_				Address, in hexadecimal
-`				Comment (rest of line ignored)
-#				A hexadecimal number
-\				A label
+FORMAL STRUCTURE
+================
 
+This is a work-in-progress.
 
-VARIABLES
---------------------------------------------------------------------------------
-_<address>      memory address
+COMMENT        ` Anything to end of line is ignored
+INCLUDE        {<file | file.item... to include in scope>}
+LABEL        \<label name>
+ADDRESS        _NUMBER
+VARIABLE    [$]$<variable name>
+FUNCTION    [@]@<function name>
 
-[$]$name        Defines a variable. All variables are table-based objects.
-                variables are restricted to their scope. $$ defines a variable
-				in the parent scope, with a new instance.
+NUMBER      <decimal with comma> | #<hexadecimal up to 32-bits>
+STRING      "quote wrapped"'speech marks inside apostrophes"'
+BINARY      b<hexadecimal any length>
+NULL        ()
 
-name.<child>    Child objects are referenced by name or index. At the first
-                instance in a chain an object doesn't exist, null is returned.
-				If referenced without $, must be a function.
+VAR_DECL    VARIABLE [OPERATION ASSIGNMENT]
+FUNC_DECL   VARIABLE<ASSIGNMENT>* FUNCTION
 
-name[index]		Get indexed value.
+SHALLOW_CPY =
+REF_CPY     :
+ASSIGNMENT  SHALLOW_CPY | REF_CPY
 
-name[]          Gets all direct variable children of the variable.
+SHALLOW_EQ  ?
+REF_EQ      ?:
+LT          <
+GT          >
+LTE         ?<
+GTE         ?>
+COMPARISON  SHALLOW_EQ | REF_EQ | LT | GT | LTE | GTE
 
-name!           Get how many variable children there are for the variable.
+COMPL       ~
+AND         &
+OR          |
+XOR         ^
+ADD         +
+SUB         -
+MUL         *
+DIV         /
+MOD         %
+SHL         <-
+SHR         ->
+SSR         >>
+MATH        COMPL | AND | OR | XOR | ADD | SUB
+            | MUL | DIV | MOD | SHL | SHR | SSR
 
-()				Empty braces are no value, or null.
+OPERAND     NUMBER | STRING | BINARY | <variable name> | <function name>
+            | OPERATION | NULL | (OPERAND) | (OPERATION)
+OPERATOR    ASSIGNMENT | COMPARISON | MATH | <function name>
+OPERATION   OPERAND* OPERATOR
 
-
-DATA FORMATS
---------------------------------------------------------------------------------
-32-bit          value, in decimal
-
-"'text"'"'      String within quotes -> this produces 'text"
-
-#blob           raw contiguous hexadecimal data
-
-
-FUNCTIONS
---------------------------------------------------------------------------------
-[$param ...] [@]@name	Define a function. Parameter names are allocated to
-                        provided parameters in order defined. Functions don't
-						have to consume all variables on the stack, but must
-						use them contiguously from the right [top].
-
-.<param>                References a parameter
-
-[index]                 Get the parameter by index
-
-[]                      Gets all parameters of the function
-
-!                       Get how many parameters were passed into the function.
-
-name [var ...] <=:>     return assignment, with either copy or reference
-
-[var ...] name          Calls the specified function, with the stack
-
-
-OPERATORS
---------------------------------------------------------------------------------
-}               with (add file to current scope)
-=               Copy Assignment [full object, including functions]
-:               Reference Assignment, includes functions
-)				negative [the preceding ( is ignored]
-~				complement
-&               and
-|               or
-^               xor
-+               addition
--               subtraction
-*               multiply
-/               divide
-%               modulus
-<-              shift left
-->              shift right
->>              signed shift right
-
-
-COMPARATORS
---------------------------------------------------------------------------------
-If a comparator returns a 0, that is considered TRUE, else FALSE. If FALSE, the
-next instructions or scope, as appropriate, is skipped.
-
-?			Equals
-?:			Reference Equals
-<			Less than
->			Greater than
-?<			Less than or equal
-?>			Greater than or equal
+LINE        INCLUDE | LABEL | VAR_DECL | FUNC_DECL | OPERATION 
+            
+SPECIALS    . <reference sub-variable|function by name>
+            [<index>] <reference sub-variable|function by index>
+            [] <get all variable|function children>
+            ! <get count of variable|function children>
