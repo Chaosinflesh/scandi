@@ -1,0 +1,14 @@
+` demo.scandi
+` -----------
+` By Neil Bradley
+`
+` Demonstrates all the features of the scandi language.
+
+` Brings the print function in from demo2.scandi. Note that the file extension
+` is implied. If we wanted to include the entirety of demo2, we could just
+` include demo2, as {demo2}.
+{demo2.print}
+
+` This displays "scandi demo", and just demonstrates how to handle quote
+` characters within strings.
+'"'"scandi demo"'"' print

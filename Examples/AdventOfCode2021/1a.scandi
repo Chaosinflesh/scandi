@@ -1,14 +1,14 @@
 ` Advent of Code 2021.1a
 
 $count 0 =
-$last 0 =
+$last next =
 
 \start
 	$read next =
-	read null ?
+	read () ?
 		result
-	read last >
-		count (1) -		` This is the same as 1 +
+    read last > 
+        count 1 +
 	last read =
 	start
 
