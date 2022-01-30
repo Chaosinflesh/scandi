@@ -1,81 +1,9 @@
-package nz.bradley.neil.scandi;
+package nz.bradley.neil.scandi.analysers;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
-public class Token {
-
-    public Type type;
-    public String value;
-
-    public Token(Type type) {
-        this.type = type;
-        value = null;
-    }
-
-    public Token(Type type, String value) {
-        this.type = type;
-        this.value = value;
-    }
-
-    public enum Type {
-        NAME("N"),
-        DEPTH("D"),
-
-        NUMBER("V"),
-        HEXADECIMAL("#"),
-        STRING("\""),
-        BLOB("__"),
-        NULL("()"),
-
-        WITH_OPEN("{"),
-        WITH_CLOSE("}"),
-        NEGATIVE_OPEN("("),
-        NEGATIVE_CLOSE(")"),
-
-        OPERATOR_DOT("."),
-        OPERATOR_COUNT("!"),
-        OPERATOR_INDEX_OPEN("["),
-        OPERATOR_INDEX_CLOSE("]"),
-        OPERATOR_COLLECTION("[]"),
-
-        DECLARATION_VARIABLE("$"),
-        DECLARATION_VARIABLE_UP("$$"),
-        DECLARATION_FUNCTION("@"),
-        DECLARATION_FUNCTION_UP("@@"),
-        DECLARATION_LABEL("\\"),
-        ADDRESS("_"),
-
-        COMPARATOR_EQUALS("?"),
-        COMPARATOR_EQUALS_REFERENCE("?:"),
-        COMPARATOR_LESS("<"),
-        COMPARATOR_GREATER(">"),
-        COMPARATOR_LESS_EQUAL("?<"),
-        COMPARATOR_GREATER_EQUAL("?>"),
-
-        ASSIGNMENT_COPY("="),
-        ASSIGNMENT_REFERENCE(":"),
-
-        OPERATOR_COMPLEMENT("~"),
-        OPERATOR_AND("&"),
-        OPERATOR_OR("|"),
-        OPERATOR_XOR("^"),
-        OPERATOR_ADD("+"),
-        OPERATOR_SUB("-"),
-        OPERATOR_MUL("*"),
-        OPERATOR_DIV("/"),
-        OPERATOR_MOD("%"),
-        OPERATOR_SHL("<-"),
-        OPERATOR_SHR("->"),
-        OPERATOR_SSR(">>");
-
-        public final String value;
-
-        Type(String value) {
-            this.value = value;
-        }
-    }
+public class Lexe {
 
     /**
      *
@@ -84,29 +12,30 @@ public class Token {
      *
      * @return  The file contents, tokenized.
      */
-    public static List<Token> tokenize(String relativeDotPath, List<String> data) {
+    public static List<String> analyse(String relativeDotPath, List<String> data, List<String> warnings) {
         var name = relativeDotPath.contains(".")
                 ? relativeDotPath.substring(relativeDotPath.lastIndexOf("."))
                 : relativeDotPath;
-        var tokens = new ArrayList<>(List.of(new Token(Type.DEPTH, "0"), new Token(Type.NAME, name)));
-        var warnings = new ArrayList<String>();
+        var lexemes = new ArrayList<String>();
         int count = 0;
 
         for (var line: data) {
             count++;
-            tokens.add(new Token(Type.DEPTH,getDepth(line)));
-            var rawTokens = splitWithStrings(line.stripLeading(), relativeDotPath, count);
-
+            lexemes.add(";" + getDepth(line));
+            lexemes.addAll(splitWithStrings(line.stripLeading(), relativeDotPath, count, warnings));
         }
-        return tokens;
+
+        return lexemes;
     }
 
-    private static String getDepth(String line) {
+
+    private static int getDepth(String line) {
         // Files have depth of 1 - globals are at 0.
-        return "" + (1 + line.length() - line.stripLeading().length());
+        return 1 + line.length() - line.stripLeading().length();
     }
 
-    private static List<String> splitWithStrings(String line, String dotPath, int lineNo) {
+
+    private static List<String> splitWithStrings(String line, String dotPath, int lineNo, List<String> warnings) {
         String symbols = "~!@#$%^&*()-_=+\\[{\\]}:\\\\|<\\.>/?";
         var results = new ArrayList<String>();
         boolean inString = false;
@@ -176,14 +105,14 @@ public class Token {
             }
         }
         if (!current.isEmpty()) {
-            if (!inString) {
-                results.add(current.toString());
-            } else {
-                throw new RuntimeException("Unclosed string at " + dotPath + ":" + lineNo + "\t" + line);
+            results.add(current.toString());
+            if (inString) {
+                warnings.add("Unclosed string at " + dotPath + ":" + lineNo + "\t" + line);
             }
         }
         return results;
     }
+
 
     private static boolean checkNextChar(String line, int pos, int codePoint) {
         return pos < line.length() - 1 && line.codePointAt(pos + 1) == codePoint;

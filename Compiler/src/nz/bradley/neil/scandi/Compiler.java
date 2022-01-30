@@ -1,5 +1,7 @@
 package nz.bradley.neil.scandi;
 
+import nz.bradley.neil.scandi.analysers.Lexe;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -37,22 +39,38 @@ public class Compiler {
 
     private static List<String> compileToAssembler(List<String> files) {
         List<String> compiled = new ArrayList<>();
+        List<String> warnings = new ArrayList<>();
+        List<String> errors = new ArrayList<>();
+        Scope root = new Scope(0, null, false, new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
         for (var file: files) {
             try {
+                // 1. Get context
                 var relativeDotPath = getRelativeDotPath(file);
+                debug("relativeDotPath", relativeDotPath);
+
+                // 2. Get code only
                 var lines = stripCommentsAndBlanks(Files.readAllLines(Path.of(file)));
-                var tokens = Token.tokenize(relativeDotPath, lines);
-                var tree = Scope.buildScopeTree(tokens);
-                if (verifyScopes(tree)) {
-                    if (debug) {
-                        System.err.println("SCOPES OK");
-                    }
-                }
+                debug("LINES", relativeDotPath, lines);
+
+                // 3. Split symbols, identifiers and values
+                var lexemes = Lexe.analyse(relativeDotPath, lines, warnings);
+                debug("LEXEMES", relativeDotPath, lexemes);
+
+                // 4. Build token tree
             } catch (IOException e) {
                 System.err.println("Error reading " + file);
                 e.printStackTrace();
             }
         }
+        if (!warnings.isEmpty()) {
+            warnings.forEach(message -> System.err.println("WARNING:\t" + message));
+            System.err.println("Warnings were generated, see log.");
+        }
+        if (!errors.isEmpty()) {
+            errors.forEach(message -> System.err.println("ERROR:\t" + message));
+            System.err.println("Errors were generated, no output was produced.");
+        }
+
         return compiled;
     }
 
@@ -80,8 +98,14 @@ public class Compiler {
         return stripped;
     }
 
-    private static boolean verifyScopes(Scope root) {
-        boolean status = true;
-        return status;
+    public static void debug(String context, String data) {
+        if (debug) {
+            System.out.println("DEBUG:" + "\t" + context + "\t" + data);
+        }
+    }
+
+    public static void debug(String title, String context, List<String> data) {
+        debug(title, context);
+        data.forEach(line -> debug(context, line));
     }
 }

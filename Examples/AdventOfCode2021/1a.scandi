@@ -17,7 +17,7 @@ $read
 	start
 
 \result
-print count =
+count print
 
 @next
     next _FC4 =
