@@ -8,8 +8,8 @@ scandi is a language I created to target my 8-bit CPU (see
 https://github.com/Chaosinflesh/8-bit).
 
 * Based on so-called 'swedish maths' principles, where operands form a
-stack that is provided to operators, which pop operands, and push
-results as further operands.
+  stack that is provided to operators, which pop operands, and push
+  results as further operands.
 * No keywords, uses symbols to identify declarations
 * Scope is determined by indentation
 * Lines must end with an operator
@@ -17,6 +17,8 @@ results as further operands.
 * Variables must be declared within either parent scope, or before use
 * Variables, functions and labels may not share names within scope
 * 3 data types: number, "String" and raw binary data.
+* If a comparison results in true, executes the next instruction, else
+  the second at the same scope.
 
 
 FORMAL STRUCTURE
@@ -24,20 +26,20 @@ FORMAL STRUCTURE
 
 This is a work-in-progress.
 
-COMMENT        ` Anything to end of line is ignored
-INCLUDE        {<file | file.item... to include in scope>}
-LABEL        \<label name>
-ADDRESS        _NUMBER
+COMMENT     ` Anything to end of line is ignored
+INCLUDE     {<file | file.item... to include in scope>}
+LABEL       \<label name>
+ADDRESS     _<hexadecimal up to 32-bits>
 VARIABLE    [$]$<variable name>
 FUNCTION    [@]@<function name>
 
-NUMBER      <decimal with comma> | #<hexadecimal up to 32-bits>
+NUMBER      <decimal with [comma]> | #<hexadecimal up to 32-bits>
 STRING      "quote wrapped"'speech marks inside apostrophes"'
-BINARY      b<hexadecimal any length>
+BINARY      __<hexadecimal any length>
 NULL        ()
 
 VAR_DECL    VARIABLE [OPERATION ASSIGNMENT]
-FUNC_DECL   VARIABLE<ASSIGNMENT>* FUNCTION
+FUNC_DECL   [ VARIABLE<ASSIGNMENT>* | [] ] FUNCTION
 
 SHALLOW_CPY =
 REF_CPY     :
@@ -66,12 +68,13 @@ SSR         >>
 MATH        COMPL | AND | OR | XOR | ADD | SUB
             | MUL | DIV | MOD | SHL | SHR | SSR
 
-OPERAND     NUMBER | STRING | BINARY | <variable name> | <function name>
-            | OPERATION | NULL | (OPERAND) | (OPERATION)
+OPERAND     NUMBER | STRING | BINARY | NULL
+            | <variable name> | <function name>
+            | OPERATION | (OPERAND) | (OPERATION)
 OPERATOR    ASSIGNMENT | COMPARISON | MATH | <function name>
 OPERATION   OPERAND* OPERATOR
 
-LINE        INCLUDE | LABEL | VAR_DECL | FUNC_DECL | OPERATION 
+LINE        INCLUDE | LABEL | VAR_DECL | FUNC_DECL | OPERATION | NULL
             
 SPECIALS    . <reference sub-variable|function by name>
             [<index>] <reference sub-variable|function by index>

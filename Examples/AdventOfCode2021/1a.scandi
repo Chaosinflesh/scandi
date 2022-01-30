@@ -1,19 +1,23 @@
 ` Advent of Code 2021.1a
 
+{io.print}
+
 $count 0 =
 $last next =
+$read
 
 \start
-	$read next =
+	read next =
 	read () ?
 		result
     read last > 
         count 1 +
+    ()
 	last read =
 	start
 
 \result
-_#FC8 count =
+print count =
 
 @next
-	next _#FC4 =
+    next _FC4 =

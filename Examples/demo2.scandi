@@ -8,7 +8,7 @@
 ` are always passed the full stack, but only make use of those they wish to.
 ` Because it is a stack, the indexing works from right-to left, with index 0
 ` being the item closest to the function and thus at the top of the stack.
-@print
+[] @print
 
     ` It is necessary to introduce a new scope via indentation after the
     ` function declaration. This is because, if the new scope is not declared,
@@ -45,7 +45,7 @@
         ` Because this example is targeting my 8-bit CPU, this writes the output
         ` to the specified memory address, which in this instance effectively
         ` writes to stdout.
-        _#FC8 output =
+        _FC8 output =
         
         ` The manual implementation of the loop increment.
         count 1 +
