@@ -1,6 +1,8 @@
 package nz.bradley.neil.scandi.analysers;
 
+import java.lang.ref.Reference;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class Syntax {
 
@@ -80,9 +82,16 @@ public class Syntax {
                     case "]" -> currentLine.append("INR-");
                     case "(" -> currentLine.append("NGL-");
                     case ")" -> currentLine.append("NGR-");
+                    case "#" -> currentLine.append("HEX-");
                     default -> warnings.add("Unknown symbol in " + dotPath + ":" + lexeme);
                 }
             }
+        }
+        if (!currentLine.toString().isBlank()) {
+            if (!checkStatement(currentLine.toString())) {
+                errors.add("Invalid syntax in " + dotPath + ": " + currentLine);
+            }
+            currentLine.setLength(0);
         }
         return root;
     }
@@ -101,6 +110,25 @@ public class Syntax {
     }
 
     private static boolean checkStatement(String line) {
+        // These are non-reducible
+        if (line.startsWith("WTL-")) {
+            // With statement
+            return checkWith(line.substring(4));
+
+        } else if (line.matches("((NUL-)|(ARR-)|(VAR-ID-)*)FNC-ID-$")) {
+            // Function declaration
+            return true;
+
+        }
+
+        // Reduce references where appropriate.
+        line = maskOperators(line);
+        AtomicReference<Boolean> complexOK = new AtomicReference<>(true);
+        line = reduceComplexIDs(line, complexOK);
+        if (!complexOK.get()) {
+            return false;
+        }
+
         if ("NUL-".equals(line)) {
             // Empty if or else block
             return true;
@@ -112,10 +140,6 @@ public class Syntax {
         } else if (line.startsWith("LBL-ID-")) {
             // Label followed by statement
             return checkStatement(line.substring(7));
-
-        } else if (line.startsWith("WTL-")) {
-            // With statement
-            return checkWith(line.substring(4));
 
         } else if ("ID-".equals(line)) {
             // Jump to label
@@ -129,22 +153,20 @@ public class Syntax {
             // Variable declaration with assignment
             return checkAssignment(line.substring(7));
 
-        } else if (line.matches("((NUL-)|(ARR-)|(VAR-ID-)*)FNC-ID-$")) {
-            // Function declaration
-            return true;
-
-        } else if (line.startsWith("ADR-")) {
+        } else if (line.startsWith("ADR-HEX-")) {
             // Address assignment
-            return checkAssignment(line.substring(4));
+            return checkAssignment(line.substring(8));
 
-        } else if (line.matches("(EQR?)|([GL]TE?)-$")) {
+        } else if (line.matches(".*((EQR?)|([GL]TE?))-$")) {
             // Comparator
-            return checkArguments(line.substring(0,line.substring(0, line.length() - 1).lastIndexOf('-')));
+            return checkExpression(line.substring(0,line.substring(0, line.length() - 1).lastIndexOf('-') + 1));
 
-        } else if (line.matches("(ID)|(INR)-$")) {
+        } else if (line.matches(".*ID-$")) {
             // Function call
-            return checkFunctionCall(line);
+            return checkExpression(line.substring(0, line.length() - 3));
 
+        } else if (line.matches("ID-.*OP-$")) {
+            return checkExpression(line);
         }
 
         return false;
@@ -159,24 +181,48 @@ public class Syntax {
     }
 
     private static boolean checkAssignment(String assignment) {
-        if (assignment.endsWith("ASS-") || assignment.endsWith("ASR-")) {
+        if (assignment.endsWith("ASS-") || assignment.endsWith("REF-")) {
             return checkExpression(assignment.substring(0,assignment.length() - 4));
         }
         return false;
     }
 
     private static boolean checkExpression(String expression) {
-        // TODO:
-        return false;
+        if (expression.startsWith("OP-")) {
+            return false;
+        } else return expression.matches("(((NU[LM])|(ME)|(STR)|(ID)|(OP)|(HEX))-)*");
     }
 
-    private static boolean checkArguments(String arguments) {
-         // TODO
-        return false;
+    private static String reduceComplexIDs(String line, AtomicReference<Boolean> complexOK) {
+        while (line.contains("ID-DOT-ID-") || line.contains("INL-")) {
+            // Remove excessive DOT references
+            line = line.replaceAll("ID-DOT-ID-", "ID-");
+            line = line.replaceAll("ME-DOT-ID-", "ME-");
+            // Remove INDEXES. These need to be checked for validity.
+            if (line.contains("INL-")) {
+                int end = line.indexOf("INR-");
+                if (end >= 0) {
+                    int start = line.substring(0, end).lastIndexOf("INL-");
+                    if (start >= 0) {
+                        if (!checkExpression(line.substring(start + 4, end))) {
+                            complexOK.set(false);
+                        }
+                        line = line.substring(0, start) + line.substring(end + 4);
+                    } else {
+                        // TODO: Where are my errors?
+                        line = "";
+                        complexOK.set(false);
+                    }
+                } else {
+                    line = "";
+                    complexOK.set(false);
+                }
+            }
+        }
+        return line;
     }
 
-    private static boolean checkFunctionCall(String line) {
-        // TODO
-        return false;
+    private static String maskOperators(String line) {
+        return line.replaceAll("(SHL)|(SHR)|(SSR)|(COM)|(AND)|(XOR)|(ADD)|(SUB)|(MUL)|(DIV)|(MOD)", "OP").replaceAll("OR", "OP");
     }
 }
