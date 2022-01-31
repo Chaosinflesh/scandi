@@ -13,9 +13,6 @@ public class Lexe {
      * @return  The file contents, tokenized.
      */
     public static List<String> analyse(String relativeDotPath, List<String> data, List<String> warnings) {
-        var name = relativeDotPath.contains(".")
-                ? relativeDotPath.substring(relativeDotPath.lastIndexOf("."))
-                : relativeDotPath;
         var lexemes = new ArrayList<String>();
         int count = 0;
 
@@ -68,6 +65,7 @@ public class Lexe {
 
             } else if (!inString && symbols.contains(Character.toString(c))) {
                 // At this point we have a symbol we have to do something about.
+                boolean currentWasEmpty = current.isEmpty();
                 if (!current.isEmpty()) {
                     results.add(current.toString());
                     current.setLength(0);
@@ -75,7 +73,6 @@ public class Lexe {
                 switch (c) {
                     // Doubles:
                     case '(' -> { if (checkNextChar(line, pos, ')')) { results.add("()"); pos++; } else { results.add("("); }}
-                    case '[' -> { if (checkNextChar(line, pos, ']')) { results.add("[]"); pos++; } else { results.add("["); }}
                     case '@' -> { if (checkNextChar(line, pos, '@')) { results.add("@@"); pos++; } else { results.add("@"); }}
                     case '$' -> { if (checkNextChar(line, pos, '$')) { results.add("$$"); pos++; } else { results.add("$"); }}
                     case '-' -> { if (checkNextChar(line, pos, '>')) { results.add("->"); pos++; } else { results.add("-"); }}
@@ -95,8 +92,14 @@ public class Lexe {
                             results.add("?");
                         }
                     }
+                    case '[' -> { if (checkNextChar(line, pos, ']')) {
+                        results.add(currentWasEmpty && pos > 0 ? ".[]" : "[]"); pos++;
+                    } else {
+                        results.add(currentWasEmpty ? ".[" : "[");
+                    }}
 
                     // Singles:
+                    case '.' -> results.add(currentWasEmpty ? ".." : ".");
                     default -> results.add(Character.toString(c));
                 }
 
