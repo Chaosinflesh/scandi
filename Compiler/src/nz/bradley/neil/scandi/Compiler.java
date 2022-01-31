@@ -1,6 +1,8 @@
 package nz.bradley.neil.scandi;
 
 import nz.bradley.neil.scandi.analysers.Lexe;
+import nz.bradley.neil.scandi.analysers.Scope;
+import nz.bradley.neil.scandi.analysers.Syntax;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -41,7 +43,7 @@ public class Compiler {
         List<String> compiled = new ArrayList<>();
         List<String> warnings = new ArrayList<>();
         List<String> errors = new ArrayList<>();
-        Scope root = new Scope(0, null, false, new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
+        Scope root = new Scope(0, null, "", false);
         for (var file: files) {
             try {
                 // 1. Get context
@@ -57,6 +59,10 @@ public class Compiler {
                 debug("LEXEMES", relativeDotPath, lexemes);
 
                 // 4. Build token tree
+                var scope = Syntax.analyse(relativeDotPath, lexemes, warnings, errors);
+                root.children.add(scope);
+                scope.parent = root;
+                debug("SCOPES", relativeDotPath, scope);
             } catch (IOException e) {
                 System.err.println("Error reading " + file);
                 e.printStackTrace();
@@ -107,5 +113,10 @@ public class Compiler {
     public static void debug(String title, String context, List<String> data) {
         debug(title, context);
         data.forEach(line -> debug(context, line));
+    }
+
+    public static void debug(String title, String context, Scope scope) {
+        debug(title, context);
+        scope.debug(1);
     }
 }
