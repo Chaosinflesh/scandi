@@ -1,7 +1,8 @@
 package nz.bradley.neil.scandi;
 
-import nz.bradley.neil.scandi.analysers.Lexe;
+import nz.bradley.neil.scandi.analysers.Lexical;
 import nz.bradley.neil.scandi.analysers.Scope;
+import nz.bradley.neil.scandi.analysers.Semantic;
 import nz.bradley.neil.scandi.analysers.Syntax;
 
 import java.io.IOException;
@@ -55,14 +56,16 @@ public class Compiler {
                 debug("LINES", relativeDotPath, lines);
 
                 // 3. Split symbols, identifiers and values
-                var lexemes = Lexe.analyse(relativeDotPath, lines, warnings);
+                var lexemes = Lexical.analyse(relativeDotPath, lines, warnings);
                 debug("LEXEMES", relativeDotPath, lexemes);
 
-                // 4. Build token tree
-                var scope = Syntax.analyse(relativeDotPath, lexemes, warnings, errors);
-                root.children.add(scope);
-                scope.parent = root;
-                debug("SCOPES", relativeDotPath, scope);
+                // 4. Check syntax
+                if (Syntax.analyse(relativeDotPath, lexemes, warnings, errors)) {
+
+                    // 5. Check semantics
+                    var scope = Semantic.analyse(root, relativeDotPath, lexemes, warnings, errors);
+                    debug("SCOPES", relativeDotPath, scope);
+                }
             } catch (IOException e) {
                 System.err.println("Error reading " + file);
                 e.printStackTrace();
