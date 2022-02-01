@@ -1,21 +1,17 @@
 package nz.bradley.neil.scandi.analysers;
 
-import java.lang.ref.Reference;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class Syntax {
 
-    public static Scope analyse(
+    public static boolean analyse(
             String dotPath,
             List<String> lexemes,
             List<String> warnings,
             List<String> errors
     ) {
-        int depth = 1;  // Files start at a depth of 1.
-        var root = new Scope(depth, null, dotPath, true);
         StringBuilder currentLine = new StringBuilder();
-        Scope currentScope = root;
 
         // Convert lexemes to tokens, and check syntax.
         for (String lexeme : lexemes) {
@@ -93,7 +89,7 @@ public class Syntax {
             }
             currentLine.setLength(0);
         }
-        return root;
+        return errors.isEmpty();
     }
 
     private static boolean isHexadecimal(String isHex) {
@@ -157,6 +153,9 @@ public class Syntax {
             // Address assignment
             return checkAssignment(line.substring(8));
 
+        } else if (line.matches("ID-.*(ASS|REF)-")) {
+            return checkAssignment(line.substring(3));
+
         } else if (line.matches(".*((EQR?)|([GL]TE?))-$")) {
             // Comparator
             return checkExpression(line.substring(0,line.substring(0, line.length() - 1).lastIndexOf('-') + 1));
@@ -190,7 +189,7 @@ public class Syntax {
     private static boolean checkExpression(String expression) {
         if (expression.startsWith("OP-")) {
             return false;
-        } else return expression.matches("(((NU[LM])|(ME)|(STR)|(ID)|(OP)|(HEX))-)*");
+        } else return expression.matches("(((NU[LM])|(ME)|(STR)|(ID)|(OP)|((ADR-)?HEX)|)-)*");
     }
 
     private static String reduceComplexIDs(String line, AtomicReference<Boolean> complexOK) {
@@ -209,7 +208,6 @@ public class Syntax {
                         }
                         line = line.substring(0, start) + line.substring(end + 4);
                     } else {
-                        // TODO: Where are my errors?
                         line = "";
                         complexOK.set(false);
                     }

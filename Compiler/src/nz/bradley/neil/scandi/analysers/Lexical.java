@@ -3,7 +3,7 @@ package nz.bradley.neil.scandi.analysers;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Lexe {
+public class Lexical {
 
     /**
      *
