@@ -45,7 +45,7 @@
         ` Because this example is targeting my 8-bit CPU, this writes the output
         ` to the specified memory address, which in this instance effectively
         ` writes to stdout.
-        _FC8 output =
+        _#FC8 output =
         
         ` The manual implementation of the loop increment.
         count 1 +

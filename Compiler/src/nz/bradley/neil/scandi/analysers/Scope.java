@@ -1,32 +1,43 @@
 package nz.bradley.neil.scandi.analysers;
 
+import nz.bradley.neil.scandi.language.Token;
+
 import java.util.ArrayList;
 import java.util.List;
 
 public class Scope {
-    public Scope parent;
-    public final int depth;
-    public final String value;
-    public final boolean isDeclaration;
-    public final List<Scope> children = new ArrayList<>();
-    public final List<String> declarations = new ArrayList<>();
-    public final List<String> usages = new ArrayList<>();
+    private Scope parent;
+    private Token token;
+    private final List<Scope> children = new ArrayList<>();
 
-    public Scope(int depth, Scope parent, String value, boolean isDeclaration) {
-        this.depth = depth;
+    private Scope() {}
+
+    public Scope(
+            Scope parent,
+            Token token
+    ) {
         this.parent = parent;
-        this.value = value;
-        this.isDeclaration = isDeclaration;
+        this.token = token;
     }
 
-    public void debug(int depth) {
-        System.out.println("DEBUG:" + "\t".repeat(depth) + value);
-        System.out.println("DEBUG:" + "\t".repeat(depth + 1) + "DECLARATION:" + isDeclaration);
-        System.out.println("DEBUG:" + "\t".repeat(depth + 1) + "DECLARATIONS:");
-        declarations.forEach(o -> System.err.println("DEBUG:" + "\t".repeat(depth + 2) + o));
-        System.out.println("DEBUG:" + "\t".repeat(depth + 1) + "USAGES:");
-        usages.forEach(o -> System.err.println("DEBUG:" + "\t".repeat(depth + 2) + o));
-        System.out.println("DEBUG:" + "\t".repeat(depth + 1) + "CHILDREN:");
-        children.forEach(child -> child.debug(depth + 1));
+    public Scope getParent() {
+        return this.parent;
     }
+
+    /**
+     * Sets the parent of this Scope, and also adds itself to the
+     * parent's children if not already present.
+     * @param parent    The parent scope.
+     */
+    public void setParent(Scope parent) {
+        this.parent = parent;
+        if (!this.parent.children.contains(this)) {
+            this.parent.children.add(this);
+        }
+    }
+
+    public Token getToken() {
+        return this.token;
+    }
+
 }
