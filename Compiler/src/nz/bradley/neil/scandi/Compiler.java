@@ -4,6 +4,7 @@ import nz.bradley.neil.scandi.analysers.Lexical;
 import nz.bradley.neil.scandi.analysers.Scope;
 import nz.bradley.neil.scandi.analysers.Semantic;
 import nz.bradley.neil.scandi.analysers.Syntax;
+import nz.bradley.neil.scandi.language.Token;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -44,33 +45,33 @@ public class Compiler {
         List<String> compiled = new ArrayList<>();
         List<String> warnings = new ArrayList<>();
         List<String> errors = new ArrayList<>();
-        Scope root = new Scope(0, null, "", false);
+        Scope tree;
         for (var file: files) {
             try {
                 // 1. Get context
                 var relativeDotPath = getRelativeDotPath(file);
                 debug("relativeDotPath", relativeDotPath);
 
-                // 2. Get code only
-                var lines = stripCommentsAndBlanks(Files.readAllLines(Path.of(file)));
-                debug("LINES", relativeDotPath, lines);
+                // 2. Tokenize code
+                var tokens = Lexical.analyse(relativeDotPath, Files.readAllLines(Path.of(file)), warnings, errors);
+                debug("TOKENS", relativeDotPath, tokens);
 
-                // 3. Split symbols, identifiers and values
-                var lexemes = Lexical.analyse(relativeDotPath, lines, warnings);
-                debug("LEXEMES", relativeDotPath, lexemes);
+                // 3. Check syntax
+                if (errors.isEmpty()) {
+                    tree = Syntax.analyse(tokens, warnings, errors);
 
-                // 4. Check syntax
-                if (Syntax.analyse(relativeDotPath, lexemes, warnings, errors)) {
-
-                    // 5. Check semantics
-                    var scope = Semantic.analyse(root, relativeDotPath, lexemes, warnings, errors);
-                    debug("SCOPES", relativeDotPath, scope);
+                    // 4. Check semantics
+                    if (errors.isEmpty()) {
+                        Semantic.analyse(tree, warnings, errors);
+                    }
                 }
             } catch (IOException e) {
                 System.err.println("Error reading " + file);
                 e.printStackTrace();
             }
         }
+
+        // Check for warnings and errors.
         if (!warnings.isEmpty()) {
             warnings.forEach(message -> System.err.println("WARNING:\t" + message));
             System.err.println("Warnings were generated, see log.");
@@ -94,32 +95,15 @@ public class Compiler {
         return filename;
     }
 
-    private static List<String> stripCommentsAndBlanks(List<String> lines) {
-        List<String> stripped = new ArrayList<>();
-        for (var line: lines) {
-            if (line.contains("`")) {
-                line = line.substring(0, line.indexOf("`"));
-            }
-            if (!line.isBlank()) {
-                stripped.add(line);
-            }
-        }
-        return stripped;
-    }
-
     public static void debug(String context, String data) {
         if (debug) {
             System.out.println("DEBUG:" + "\t" + context + "\t" + data);
         }
     }
 
-    public static void debug(String title, String context, List<String> data) {
+    public static <T> void debug(String title, String context, List<T> data) {
         debug(title, context);
-        data.forEach(line -> debug(context, line));
+        data.forEach(line -> debug(context, line.toString()));
     }
 
-    public static void debug(String title, String context, Scope scope) {
-        debug(title, context);
-        scope.debug(1);
-    }
 }

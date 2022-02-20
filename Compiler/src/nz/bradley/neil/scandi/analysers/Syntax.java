@@ -1,108 +1,47 @@
 package nz.bradley.neil.scandi.analysers;
 
+import nz.bradley.neil.scandi.language.Token;
+
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class Syntax {
 
-    public static boolean analyse(
-            String dotPath,
-            List<String> lexemes,
+    public static Scope analyse(
+            List<List<Token>> tokens,
             List<String> warnings,
             List<String> errors
     ) {
-        StringBuilder currentLine = new StringBuilder();
+        Scope root = new Scope(null, new Token(Token.Type.DEPTH, null, "", -1, -1));
 
-        // Convert lexemes to tokens, and check syntax.
-        for (String lexeme : lexemes) {
-            // 1. Check prefixes.
-            if (lexeme.startsWith(";")) {
-                // Depth
-                if (!currentLine.toString().isBlank()) {
-                    if (!checkStatement(currentLine.toString())) {
-                        errors.add("Invalid syntax in " + dotPath + ": " + currentLine);
-                    }
-                    currentLine.setLength(0);
-                }
+        // Each phrase within tokens needs to be checked for correct syntax,
+        // and the scope tree built as we go.
+        tokens.forEach(phrase -> {
+            var depth = phrase.remove(0);
+            addMissingAssignment(phrase, warnings, errors);
+            condenseDeclarations(phrase, warnings, errors);
+        });
+        return root;
+    }
 
-            } else if (lexeme.startsWith("\"")) {
-                // String
-                currentLine.append("STR-");
-
-            } else if (currentLine.toString().endsWith("ADR-") && isHexadecimal(lexeme)) {
-                currentLine.append("HEX-");
-
-            } else if (isNumber(lexeme)) {
-                currentLine.append("NUM-");
-
-            } else if (isIdentifier(lexeme)) {
-                currentLine.append("ID-");
-
-            } else {
-                // This should just leave operators.
-                switch (lexeme) {
-                    case "()" -> currentLine.append("NUL-");
-                    case "[]" -> currentLine.append("ARR-");
-                    case ".[]" -> currentLine.append("ME-ARR-");
-                    case "<-" -> currentLine.append("SHL-");
-                    case "->" -> currentLine.append("SHR-");
-                    case ">>" -> currentLine.append("SSR-");
-                    case "?:" -> currentLine.append("EQR-");
-                    case "?<" -> currentLine.append("LTE-");
-                    case "?>" -> currentLine.append("GTE-");
-                    case "__" -> currentLine.append("BIN-");
-                    case "@@", "@" -> currentLine.append("FNC-");
-                    case "$$", "$" -> currentLine.append("VAR-");
-                    case "_" -> currentLine.append("ADR-");
-                    case "{" -> currentLine.append("WTL-");
-                    case "}" -> currentLine.append("WTR-");
-                    case "\\" -> currentLine.append("LBL-");
-                    case "=" -> currentLine.append("ASS-");
-                    case ":" -> currentLine.append("REF-");
-                    case "?" -> currentLine.append("EQ-");
-                    case "<" -> currentLine.append("LT-");
-                    case ">" -> currentLine.append("GT-");
-                    case "~" -> currentLine.append("COM-");
-                    case "&" -> currentLine.append("AND-");
-                    case "|" -> currentLine.append("OR-");
-                    case "^" -> currentLine.append("XOR-");
-                    case "+" -> currentLine.append("ADD-");
-                    case "-" -> currentLine.append("SUB-");
-                    case "*" -> currentLine.append("MUL-");
-                    case "/" -> currentLine.append("DIV-");
-                    case "%" -> currentLine.append("MOD-");
-                    case ".." -> currentLine.append("ME-DOT-");
-                    case "." -> currentLine.append("DOT-");
-                    case ".[" -> currentLine.append("ME-INL-");
-                    case "[" -> currentLine.append("INL-");
-                    case "]" -> currentLine.append("INR-");
-                    case "(" -> currentLine.append("NGL-");
-                    case ")" -> currentLine.append("NGR-");
-                    case "#" -> currentLine.append("HEX-");
-                    default -> warnings.add("Unknown symbol in " + dotPath + ":" + lexeme);
-                }
-            }
+    private static void addMissingAssignment(
+            final List<Token> phrase,
+            final List<String> warnings,
+            final List<String> errors
+    ) {
+        var id = phrase.get(0);
+        var op = phrase.get(phrase.size() - 1);
+        if (Token.isOperator(op) && id.type() == Token.Type.IDENTIFIER) {
+            phrase.add(0, id);
+            phrase.add(new Token(Token.Type.COPY, null, op.file(), op.line(), op.position()));
         }
-        if (!currentLine.toString().isBlank()) {
-            if (!checkStatement(currentLine.toString())) {
-                errors.add("Invalid syntax in " + dotPath + ": " + currentLine);
-            }
-            currentLine.setLength(0);
-        }
-        return errors.isEmpty();
     }
 
-    private static boolean isHexadecimal(String isHex) {
-        return isHex != null && isHex.matches("\\p{XDigit}+");
-    }
-
-    private static boolean isNumber(String isNo) {
-        // Note that this allows ',' but doesn't check how many there were.
-        return isNo != null && isNo.matches("(\\p{Digit}|,)+");
-    }
-
-    private static boolean isIdentifier(String isId) {
-        return isId != null && !isId.isBlank() && Character.isAlphabetic(isId.codePointAt(0));
+    private static void condenseDeclarations(
+            List<Token> phrase,
+            List<String> warnings,
+            List<String> errors
+    ) {
     }
 
     private static boolean checkStatement(String line) {
