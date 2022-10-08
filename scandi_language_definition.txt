@@ -17,8 +17,9 @@ https://github.com/Chaosinflesh/8-bit).
 * Variables must be declared within either parent scope, or before use
 * Variables, functions and labels may not share names within scope
 * 3 data types: number, "String" and raw binary data.
-* If a comparison results in true, executes the next instruction, else
-  the second at the same scope.
+* If a comparison results in true, executes the next instruction/scope,
+  or if false and : next instruction in scope, execute after that.
+* Can return multiple values (as a list), via assignment to function name.
 
 
 FORMAL STRUCTURE
@@ -29,7 +30,7 @@ This is a work-in-progress.
 COMMENT     ` Anything to end of line is ignored
 INCLUDE     {<file | file.item... to include in scope>}
 LABEL       \<label name>
-ADDRESS     _<hexadecimal up to 32-bits>
+ADDRESS     _<64-bit value|variable, either integer or hexadecimal>
 VARIABLE    [$]$<variable name>
 FUNCTION    [@]@<function name>
 
@@ -41,17 +42,15 @@ NULL        ()
 VAR_DECL    VARIABLE [OPERATION ASSIGNMENT]
 FUNC_DECL   [ VARIABLE<ASSIGNMENT>* | [] ] FUNCTION
 
-SHALLOW_CPY =
-REF_CPY     :
-ASSIGNMENT  SHALLOW_CPY | REF_CPY
+ASSIGNMENT  =   <primitives value, objects reference>
 
-SHALLOW_EQ  ?
-REF_EQ      ?:
+EQ          ?   <primitives by value, objects by reference>
 LT          <
 GT          >
 LTE         ?<
 GTE         ?>
 COMPARISON  SHALLOW_EQ | REF_EQ | LT | GT | LTE | GTE
+ELSE        :
 
 COMPL       ~
 AND         &
