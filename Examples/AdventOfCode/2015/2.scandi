@@ -1,0 +1,33 @@
+` Advent of Code 2015.2
+
+{math.min min}
+{stream.readline readline}
+{stream.writeline writeline}
+{string.split split}
+{system.stdin in}
+{system.stdout out}
+
+@a
+    $total 0 =
+    \loop
+        $line in readline =
+        line () ?
+            exit
+        $arr line ' ' split =
+        $x arr[0] =
+        $y arr[1] =
+        $z arr[2] =
+        $s1 x y * =
+        $s2 x z * =
+        $s3 y z * =
+        $m s1 s2 min s3 min =
+        total s1 s2 + s3 + 2 * m + =
+        loop
+    \exit
+    total out writeline
+
+@b
+    ` TODO
+
+a
+b

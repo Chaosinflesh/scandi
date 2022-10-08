@@ -1,4 +1,6 @@
 ` Hello World, in scandi
-` Written for my 8-bit CPU
 
-_FC8 "Hello World" =
+{stream.writeline writeline}
+{system.stdout out}
+
+"Hello World!" out writeline

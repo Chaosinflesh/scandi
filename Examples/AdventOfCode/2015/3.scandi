@@ -1,0 +1,37 @@
+` Advent of Code 2015.3
+
+{stream.readline readline}
+{stream.writeline writeline}
+{system.stdin in}
+{system.stdout out}
+
+@a
+    $set
+    set['0,0'] 1 =
+    $x 0 =
+    $y 0 =
+    $line in readline =
+    $n 0 =
+    \loop
+        $d line[n] =
+        '<' d ?
+            x 1 -
+        '^' d ?
+            y 1 -
+        '>' d ?
+            x 1 +
+        'v' d ?
+            y 1 +
+        set[x ',' y + +] 1 =
+        n 1 +
+        n line! >
+            exit
+        loop
+    \exit
+    set! out writeline
+
+@b
+    ` TODO
+
+a
+b

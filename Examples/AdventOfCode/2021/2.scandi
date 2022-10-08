@@ -1,0 +1,30 @@
+` Advent of Code 2021.2
+
+{stream.readline readline}
+{stream.writeline writeline}
+{string.split split}
+{system.stdin in}
+{system.stdout out}
+
+@a
+    $x 0 =
+    $y 0 =
+    \loop
+        $line in readline =
+        line () ?
+            \exit
+        $arr line ' ' split =
+        'forward' arr[0] ?
+            x arr[1] +
+        'up' $arr[0] ?
+            y arr[1] -
+        'down' arr[0] ?
+            y arr[1] +
+        loop
+    \exit
+    x y * out writeline
+
+@b
+
+a
+b
