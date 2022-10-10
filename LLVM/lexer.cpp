@@ -7,6 +7,7 @@
  */
 #include <iostream>
 #include <map>
+#include <stdexcept>
 #include <string>
 #include <vector>
 #include "lexer.h"
@@ -123,8 +124,9 @@ size_t getNumber(std::vector<Token>& tokens, const std::string line, size_t pos)
 	bool decimalSeen = false;
 	while (pos < line.size() && (isdigit(line[pos]) || line[pos] == LEX_DECIMAL_POINT)) {
 		if (line[pos] == LEX_DECIMAL_POINT) {
+			// Oops. malformed number!
 			if (decimalSeen) {
-				// TODO: How do I throw an exception here?
+				throw std::domain_error("Extraneous decimal point");
 			} else {
 				decimalSeen = true;
 			}
@@ -192,8 +194,9 @@ size_t getSymbol(std::vector<Token>& tokens, const std::string line, size_t pos)
 			return pos + 1;
 		}
 	}
-	// TODO: If we get here, there was a problem!
-	return pos + 1;
+	
+	// If we get here, there was a problem!
+	throw std::domain_error("Unknown symbol");
 }
 
 
@@ -208,33 +211,53 @@ void tokenizeLine(std::vector<Token>& tokens, const std::string line) {
 		}
 		tokens.push_back(Token(TOK_SCOPE, std::string(), (int)pos + 1, 0.0D));
 		
-		while (pos < line.size()) {
-			// Check for comment
-			if (line[pos] == LEX_COMMENT) {
-				return;
-			}
-			
-			// Check for identifiers
-			if (isalpha(line[pos])) {
-				pos = getIdentifier(tokens, line, pos);
+		try {
+			while (pos < line.size()) {
+				// Check for comment
+				if (line[pos] == LEX_COMMENT) {
+					return;
+				}
+				
+				// Check for identifiers
+				if (isalpha(line[pos])) {
+					pos = getIdentifier(tokens, line, pos);
 
-			// Check for numbers
-			} else if (isdigit(line[pos]) || line[pos] == LEX_DECIMAL_POINT) {
-				pos = getNumber(tokens, line, pos);
-			
-			// Check for strings
-			} else if (line[pos] == LEX_STRING_QUOTES || line[pos] == LEX_STRING_APOSTROPHE) {
-				pos = getString(tokens, line, pos);
+				// Check for numbers
+				} else if (isdigit(line[pos]) || line[pos] == LEX_DECIMAL_POINT) {
+					pos = getNumber(tokens, line, pos);
+				
+				// Check for strings
+				} else if (line[pos] == LEX_STRING_QUOTES || line[pos] == LEX_STRING_APOSTROPHE) {
+					pos = getString(tokens, line, pos);
 
-			// Check for symbols
-			} else {
-				pos = getSymbol(tokens, line, pos);
+				// Check for symbols
+				} else {
+					pos = getSymbol(tokens, line, pos);
+				}
+				
+				// Skip spaces
+				while (pos < line.size() && line[pos] == LEX_SPACE) {
+					pos++;
+				}
 			}
-			
-			// Skip spaces
-			while (pos < line.size() && line[pos] == LEX_SPACE) {
-				pos++;
-			}
+		} catch (const std::domain_error& de) {
+			throw std::domain_error(std::to_string(pos) + ": " + de.what());
 		}
 	}
+}
+
+
+bool tokenizeStream(std::vector<Token>& tokens, std::istream& in, const std::string name) {
+	bool success = true;
+	int lineNo = 1;
+	for (std::string line; std::getline(in, line); ) {
+		try {
+			tokenizeLine(tokens, line);
+		} catch (std::domain_error& de) {
+			std::cerr << "LEXER: " << name << "@" << lineNo << ": " << de.what() << std::endl;
+			success = false;
+		}
+		lineNo++;
+	}
+	return success;
 }

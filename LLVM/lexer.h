@@ -100,7 +100,10 @@ class Token {
 };
 
 
+std::ostream& operator<<(std::ostream& o, const Token& t);
+
+
 void tokenizeLine(std::vector<Token>& tokens, const std::string line);
 
 
-std::ostream& operator<<(std::ostream& o, const Token& t);
+bool tokenizeStream(std::vector<Token>& tokens, std::istream& in, const std::string name);
