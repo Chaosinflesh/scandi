@@ -24,12 +24,14 @@ int main(int argc, char** argv) {
 #endif
     
     // 2. Parse
-    auto ast = std::make_shared<CitizenAST>(CitizenAST(0, std::shared_ptr<CitizenAST>(nullptr)));
+    auto global = std::make_shared<CitizenAST>(CitizenAST(-1, std::shared_ptr<CitizenAST>(nullptr)));
+    auto ast = std::make_shared<DeclaredCitizenAST>(DeclaredCitizenAST("file_level", TOK_DECLARATION_VARIABLE, 0, global));
+    global->members.push_back(ast);
     if (!parseToAST(tokens, ast)) {
         std::cerr << "PARSING FAILED" << std::endl;
     }
 #ifdef DEBUG
-    std::cout << *ast << std::endl;
+    std::cout << *global << std::endl;
 #endif
 
     // 3. Semantic analysis

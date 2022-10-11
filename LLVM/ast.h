@@ -10,6 +10,7 @@
 
 #define CITIZEN_UNIDENTIFIED   0
 #define CITIZEN_DECLARED       1
+#define CITIZEN_ALIAS          2
 
 
 class CitizenAST {
@@ -39,7 +40,8 @@ class DeclaredCitizenAST : public CitizenAST {
             TokenType type,
             int depth,
             std::shared_ptr<CitizenAST> scope
-        ) : CitizenAST(depth, scope),
+        ) : 
+            CitizenAST(depth, scope),
             name(name),
             type(type)
         {
@@ -51,22 +53,31 @@ class DeclaredCitizenAST : public CitizenAST {
 std::ostream& operator<<(std::ostream&, const DeclaredCitizenAST&);
 
 
-/*
-class AliasAST : public CitizenAST {
-        std::string alias;
-        std::unique_ptr<DeclaredCitizenAST> target;
+
+class AliasAST : public DeclaredCitizenAST {
     
     public:
+        // This will need to be linked during semantic checking.
+        std::vector<Token> link;
+        std::shared_ptr<DeclaredCitizenAST> target;
+
         AliasAST(
             std::string name,
-            std::shared_ptr<DeclaredCitizenAST> target,
+            std::vector<Token> link,
             int depth,
-            
-        ) : name(name), target(std::move(target)) {}
+            std::shared_ptr<CitizenAST> scope
+        ) :
+            DeclaredCitizenAST(name, TOK_IDENTIFIER_ALIAS, depth, scope),
+            link(link)
+        {
+            printId = CITIZEN_ALIAS;
+            target = std::shared_ptr<DeclaredCitizenAST>(nullptr);
+        }
 };
 std::ostream& operator<<(std::ostream&, const AliasAST&);
 
 
+/*
 class ReferenceAST : public CitizenAST {
         std::unique_ptr<DeclaredCitizenAST> target;
     

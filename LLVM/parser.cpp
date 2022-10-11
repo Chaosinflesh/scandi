@@ -33,6 +33,32 @@ std::shared_ptr<CitizenAST> parseLabelDeclaration(
 }
 
 
+std::shared_ptr<CitizenAST> parseFunctionDeclaration(
+    std::vector<Token> stack,
+    std::shared_ptr<CitizenAST> parent,
+    int depth,
+    bool isStatic
+) {
+    if (stack.size() > 1) {
+        if (stack[1].type == TOK_IDENTIFIER_ALIAS) {
+            std::string identifier = stack[1].sVal;
+            auto stackAST = std::make_shared<DeclaredCitizenAST>(DeclaredCitizenAST(
+                identifier,
+                isStatic ? TOK_DECLARATION_FUNCTION_STATIC : TOK_DECLARATION_FUNCTION,
+                depth,
+                parent
+            ));
+            parent.get()->members.push_back(stackAST);
+            return stackAST;
+        } else {
+            throw std::invalid_argument("PARSER: Expected label identifier, found something else. Aborting.");
+        }
+    } else {
+        throw std::invalid_argument("PARSER: Missing label identifier. Aborting.");
+    }
+}
+
+
 std::shared_ptr<CitizenAST> parseVariableDeclaration(
     std::vector<Token> stack,
     std::shared_ptr<CitizenAST> parent,
@@ -70,12 +96,36 @@ std::shared_ptr<CitizenAST> parseVariableDeclaration(
 }
 
 
+std::shared_ptr<CitizenAST> parseAlias(std::vector<Token> stack, std::shared_ptr<CitizenAST> parent, int depth) {
+    if (stack.size() < 3 || stack.back().type != TOK_WITH_END) {
+        throw std::invalid_argument("PARSER: Empty or malformed with statement. Aborting.");
+    }
+    auto current = stack.begin() + 1;
+    bool expectDot = false;
+    std::vector<Token> link;
+    while (current != stack.end() - 1) {
+        // TODO: I got tired here.
+        if (expectDot) {
+        } else {
+            if (current->type == TOK_IDENTIFIER_ALIAS) {
+                link.push_back(*current);
+            }
+        }
+        current = std::next(current);
+    }
+    return parent;
+}
+
+
 std::shared_ptr<CitizenAST> parseStack(std::vector<Token> stack, std::shared_ptr<CitizenAST> parent, int depth) {
     // Determine type of stack
     switch (stack[0].type) {
         case TOK_DECLARATION_LABEL:             return parseLabelDeclaration(stack, parent, depth);
         case TOK_DECLARATION_VARIABLE:          return parseVariableDeclaration(stack, parent, depth, false);
         case TOK_DECLARATION_VARIABLE_STATIC:   return parseVariableDeclaration(stack, parent, depth, true);
+        case TOK_DECLARATION_FUNCTION:          return parseFunctionDeclaration(stack, parent, depth, false);
+        case TOK_DECLARATION_FUNCTION_STATIC:   return parseFunctionDeclaration(stack, parent, depth, true);
+        case TOK_WITH_START:                    return parseAlias(stack, parent, depth);
         default: break;
     }
     std::cout << "NOT YET IMPLEMENTED: Stack [" << stack[0].type << "]" << std::endl;

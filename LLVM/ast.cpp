@@ -12,10 +12,16 @@ std::ostream& operator<<(std::ostream& os, const CitizenAST& citizen) {
         case CITIZEN_DECLARED:
             os << dynamic_cast<const DeclaredCitizenAST&>(citizen);
             break;
-            
+        case CITIZEN_ALIAS:
+            os << dynamic_cast<const AliasAST&>(citizen);
+            break;
+        
         default:
-            std::string depth(citizen.depth, ' ');
-            os << depth << "Citizen:Unidentified" << std::endl;
+            // Don't print global info.
+            if (citizen.depth >= 0) {
+                std::string depth(citizen.depth, ' ');
+                os << depth << "Citizen:Unidentified" << std::endl;
+            }
             for (auto member: citizen.members) {
                 os << *member;
             }
@@ -42,13 +48,19 @@ std::ostream& operator<<(std::ostream& os, const DeclaredCitizenAST& citizen) {
 }
 
 
-/*
 std::ostream& operator<<(std::ostream& os, const AliasAST& alias) {
-    os << "Alias " << alias.alias << " -> " << alias.target ? alias.target.get() : "<>";
+    std::string depth(alias.depth, ' ');
+    os << depth << "Alias[" << alias.name << "] -> ";
+    if (alias.target) {
+        os << *alias.target;
+    } else {
+        os << "<>";
+    }
     return os;
 }
 
 
+/*
 std::ostream& operator<<(std::ostream& os, const ReferenceAST& ref) {
     os << "Reference -> " << ref.target ? ref.target.get() : "<>";
     return os;
