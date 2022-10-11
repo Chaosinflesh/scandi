@@ -20,6 +20,10 @@ std::ostream& operator<<(std::ostream& os, const CitizenAST& citizen) {
         case CITIZEN_FUNCTION:
             os << dynamic_cast<const FunctionAST&>(citizen);
             break;
+            
+        case CITIZEN_EXPRESSION:
+            os << dynamic_cast<const ExpressionAST&>(citizen);
+            break;
         
         default:
             // Don't print global info.

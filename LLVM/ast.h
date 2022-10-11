@@ -12,6 +12,7 @@
 #define CITIZEN_DECLARED       1
 #define CITIZEN_ALIAS          2
 #define CITIZEN_FUNCTION       3
+#define CITIZEN_EXPRESSION     4
 
 
 class CitizenAST {
@@ -111,3 +112,19 @@ class FunctionAST : public DeclaredCitizenAST {
         }
 };
 std::ostream& operator<<(std::ostream&, const FunctionAST&);
+
+
+class ExpressionAST : public CitizenAST {
+    public:
+        std::vector<CitizenAST> stack;
+    
+        ExpressionAST(
+            int depth,
+            std::shared_ptr<CitizenAST> scope
+        ) :
+            CitizenAST(depth, false, scope)
+        {
+            printId = CITIZEN_EXPRESSION;
+        }
+}
+std::ostream& operator<<(std::ostream&, const ExpressionAST&);
