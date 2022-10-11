@@ -57,19 +57,15 @@ std::ostream& operator<<(std::ostream&, const DeclaredCitizenAST&);
 class AliasAST : public DeclaredCitizenAST {
     
     public:
-        // This will need to be linked during semantic checking.
-        std::vector<Token> link;
+        // This will need to be linked from members during semantic analysis.
         std::shared_ptr<DeclaredCitizenAST> target;
 
         AliasAST(
             std::string name,
-            std::vector<Token> link,
             int depth,
             std::shared_ptr<CitizenAST> scope
         ) :
-            DeclaredCitizenAST(name, TOK_IDENTIFIER_ALIAS, depth, scope),
-            link(link)
-        {
+            DeclaredCitizenAST(name, TOK_IDENTIFIER_ALIAS, depth, scope) {
             printId = CITIZEN_ALIAS;
             target = std::shared_ptr<DeclaredCitizenAST>(nullptr);
         }

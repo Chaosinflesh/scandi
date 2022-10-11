@@ -56,6 +56,7 @@ std::ostream& operator<<(std::ostream& os, const AliasAST& alias) {
     } else {
         os << "<>";
     }
+    os << std::endl;
     return os;
 }
 
