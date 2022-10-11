@@ -11,6 +11,7 @@
 #define CITIZEN_UNIDENTIFIED   0
 #define CITIZEN_DECLARED       1
 #define CITIZEN_ALIAS          2
+#define CITIZEN_FUNCTION       3
 
 
 class CitizenAST {
@@ -18,10 +19,19 @@ class CitizenAST {
     public:
         int printId = CITIZEN_UNIDENTIFIED;
         int depth;
+        bool isStatic = false;
         std::shared_ptr<CitizenAST> scope;
         std::vector<std::shared_ptr<CitizenAST>> members;
 
-        CitizenAST(int depth, std::shared_ptr<CitizenAST> scope) : depth(depth), scope(scope) {}
+        CitizenAST(
+            int depth,
+            bool isStatic,
+            std::shared_ptr<CitizenAST> scope
+        ) :
+            depth(depth),
+            isStatic(isStatic),
+            scope(scope)
+        {}
 
         virtual ~CitizenAST() {}
 
@@ -39,9 +49,10 @@ class DeclaredCitizenAST : public CitizenAST {
             std::string name,
             TokenType type,
             int depth,
+            bool isStatic,
             std::shared_ptr<CitizenAST> scope
         ) : 
-            CitizenAST(depth, scope),
+            CitizenAST(depth, isStatic, scope),
             name(name),
             type(type)
         {
@@ -65,7 +76,8 @@ class AliasAST : public DeclaredCitizenAST {
             int depth,
             std::shared_ptr<CitizenAST> scope
         ) :
-            DeclaredCitizenAST(name, TOK_IDENTIFIER_ALIAS, depth, scope) {
+            // Static-ness will be determined during semantic analysis.
+            DeclaredCitizenAST(name, TOK_IDENTIFIER_ALIAS, depth, false, scope) {
             printId = CITIZEN_ALIAS;
             target = std::shared_ptr<DeclaredCitizenAST>(nullptr);
         }
@@ -73,12 +85,29 @@ class AliasAST : public DeclaredCitizenAST {
 std::ostream& operator<<(std::ostream&, const AliasAST&);
 
 
-/*
-class ReferenceAST : public CitizenAST {
-        std::unique_ptr<DeclaredCitizenAST> target;
+class FunctionAST : public DeclaredCitizenAST {
     
     public:
-        ReferenceAST(std::unique_ptr<DeclaredCitizenAST> target) : target(target) {}
-}
-std::ostream& operator<<(std::ostream&, const ReferenceAST&);
-*/
+        bool takesVarargs = false;
+        std::vector<std::shared_ptr<CitizenAST>> arguments;
+
+        FunctionAST(
+            std::string name,
+            bool isStatic,
+            bool takesVarargs,
+            int depth,
+            std::shared_ptr<CitizenAST> scope
+        ) :
+            DeclaredCitizenAST(
+                name,
+                TOK_DECLARATION_FUNCTION,
+                depth,
+                isStatic,
+                scope
+            ),
+            takesVarargs(takesVarargs)
+        {
+            printId = CITIZEN_FUNCTION;
+        }
+};
+std::ostream& operator<<(std::ostream&, const FunctionAST&);

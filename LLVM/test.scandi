@@ -1,0 +1,19 @@
+` Alias tests
+{system.out}                                ` Expected Alias->out
+{stream.writeline writeline}                ` Expected Alias->writeline
+
+` Label test
+\label1                                     ` Expected Label->label1
+    \label2                                 ` Expected Label->label2 with depth
+
+` Variable & function test
+$var1                                       ` Expected Declaration->var1
+    @func1                                  ` Expected Declaration->func1
+    [] @func2                               ` Expected Declaration->func2 +VARARGS
+    $arg1 @func3                            ` Expected Declaration->func3 + arg1
+                                            `    Expected Declaration->arg1
+        [] $arg2 @func4                     ` Expected Declaration->func4 +VARARGS + arg2
+                                            `    Expected Declaration->arg2
+
+$$var2                                      ` Expected Declaration->var2 +STATIC
+    @@func5                                 ` Expected Declaration->func5 + STATIC

@@ -24,8 +24,8 @@ int main(int argc, char** argv) {
 #endif
     
     // 2. Parse
-    auto global = std::make_shared<CitizenAST>(CitizenAST(-1, std::shared_ptr<CitizenAST>(nullptr)));
-    auto ast = std::make_shared<DeclaredCitizenAST>(DeclaredCitizenAST("file_level", TOK_DECLARATION_VARIABLE, 0, global));
+    auto global = std::make_shared<CitizenAST>(CitizenAST(-1, true, std::shared_ptr<CitizenAST>(nullptr)));
+    auto ast = std::make_shared<DeclaredCitizenAST>(DeclaredCitizenAST("file_level", TOK_DECLARATION_VARIABLE, 0, true, global));
     global->members.push_back(ast);
     if (!parseToAST(tokens, ast)) {
         std::cerr << "PARSING FAILED" << std::endl;

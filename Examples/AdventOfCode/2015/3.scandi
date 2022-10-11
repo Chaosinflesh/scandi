@@ -30,7 +30,7 @@
     \exit
     set! out writeline
 
-@b
+[] $first $second @b
     ` TODO
 
 a

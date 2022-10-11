@@ -12,8 +12,13 @@ std::ostream& operator<<(std::ostream& os, const CitizenAST& citizen) {
         case CITIZEN_DECLARED:
             os << dynamic_cast<const DeclaredCitizenAST&>(citizen);
             break;
+            
         case CITIZEN_ALIAS:
             os << dynamic_cast<const AliasAST&>(citizen);
+            break;
+            
+        case CITIZEN_FUNCTION:
+            os << dynamic_cast<const FunctionAST&>(citizen);
             break;
         
         default:
@@ -37,10 +42,12 @@ std::ostream& operator<<(std::ostream& os, const DeclaredCitizenAST& citizen) {
     switch (citizen.type) {
         case TOK_DECLARATION_LABEL:           type = "DECLARATION_LABEL";           break;
         case TOK_DECLARATION_VARIABLE:        type = "DECLARATION_VARIABLE";        break;
-        case TOK_DECLARATION_FUNCTION:        type = "DECLARATION_FUNCTION";        break;
-        case TOK_DECLARATION_VARIABLE_STATIC: type = "DECLARATION_STATIC_VARIABLE"; break;
     }
-    os << depth << "Citizen[" << type << "]: " << citizen.name << std::endl;
+    os << depth << "Citizen[" << type << "]: " << citizen.name;
+    if (citizen.isStatic) {
+        os << " +STATIC";
+    }
+    os << std::endl;
     for (auto member: citizen.members) {
         os << *member;
     }
@@ -57,6 +64,26 @@ std::ostream& operator<<(std::ostream& os, const AliasAST& alias) {
         os << "<>";
     }
     os << std::endl;
+    return os;
+}
+
+
+std::ostream& operator<<(std::ostream& os, const FunctionAST& function) {
+    std::string depth(function.depth, ' ');
+    os << depth << "Function[" << function.name << "] -> ";
+    if (function.isStatic) {
+        os << " +STATIC";
+    }
+    if (function.takesVarargs) {
+        os << " +VARARGS";
+    }
+    for (auto arg: function.arguments) {
+        os << " " << dynamic_cast<DeclaredCitizenAST&>(*arg).name;
+    }
+    os << std::endl;
+    for (auto member: function.members) {
+        os << *member;
+    }
     return os;
 }
 

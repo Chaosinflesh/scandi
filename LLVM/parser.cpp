@@ -21,7 +21,13 @@ std::shared_ptr<CitizenAST> parseLabelDeclaration(
     if (stack.size() > 1) {
         if (stack[1].type == TOK_IDENTIFIER_ALIAS) {
             std::string identifier = stack[1].sVal;
-            auto stackAST = std::make_shared<DeclaredCitizenAST>(DeclaredCitizenAST(identifier, TOK_DECLARATION_LABEL, depth, parent));
+            auto stackAST = std::make_shared<DeclaredCitizenAST>(DeclaredCitizenAST(
+                identifier,
+                TOK_DECLARATION_LABEL,
+                depth,
+                false,
+                parent
+            ));
             parent.get()->members.push_back(stackAST);
             return stackAST;
         } else {
@@ -29,31 +35,6 @@ std::shared_ptr<CitizenAST> parseLabelDeclaration(
         }
     } else {
         throw std::domain_error("Missing label identifier. Aborting.");
-    }
-}
-
-
-std::shared_ptr<CitizenAST> parseFunctionDeclaration(
-    std::vector<Token> stack,
-    std::shared_ptr<CitizenAST> parent,
-    int depth,
-    bool isStatic
-) {
-    if (stack.back().type == TOK_IDENTIFIER_ALIAS) {
-        std::string identifier = stack.back().sVal;
-        auto stackAST = std::make_shared<DeclaredCitizenAST>(DeclaredCitizenAST(
-            identifier,
-            isStatic ? TOK_DECLARATION_FUNCTION_STATIC : TOK_DECLARATION_FUNCTION,
-            depth,
-            parent
-        ));
-        //
-        // TODO: Add arguments here (make FunctionAST with .arguments).
-        //
-        parent.get()->members.push_back(stackAST);
-        return stackAST;
-    } else {
-        throw std::domain_error("Expected label identifier, found something else. Aborting.");
     }
 }
 
@@ -69,8 +50,9 @@ std::shared_ptr<CitizenAST> parseVariableDeclaration(
             std::string identifier = stack[1].sVal;
             auto stackAST = std::make_shared<DeclaredCitizenAST>(DeclaredCitizenAST(
                 identifier,
-                isStatic ? TOK_DECLARATION_VARIABLE_STATIC : TOK_DECLARATION_VARIABLE,
+                TOK_DECLARATION_VARIABLE,
                 depth,
+                isStatic,
                 parent
             ));
             parent.get()->members.push_back(stackAST);
@@ -95,73 +77,117 @@ std::shared_ptr<CitizenAST> parseVariableDeclaration(
 }
 
 
+std::shared_ptr<CitizenAST> parseFunctionDeclaration(
+    std::vector<Token> stack,
+    std::shared_ptr<CitizenAST> parent,
+    int depth,
+    bool isStatic
+) {
+    if (stack.back().type == TOK_IDENTIFIER_ALIAS) {
+        std::string identifier = stack.back().sVal;
+        auto functionAST = std::make_shared<FunctionAST>(FunctionAST(
+            identifier,
+            isStatic,
+            stack[0].type == TOK_VARARGS,
+            depth,
+            parent
+        ));
+        
+        // Parse argument declarations
+        auto argument = stack.begin();
+        if (argument->type == TOK_VARARGS) {
+            argument++;
+        }
+        while (argument != stack.end() - 2) {
+            if (argument->type == TOK_DECLARATION_VARIABLE && (argument + 1)->type == TOK_IDENTIFIER_ALIAS) {
+                std::vector<Token> varExpr;
+                varExpr.insert(varExpr.begin(), argument, argument + 2);
+                functionAST->arguments.insert(
+                    functionAST->arguments.begin(),
+                    parseVariableDeclaration(varExpr, functionAST, depth + 1, false)
+                );
+            } else {
+                throw std::domain_error("Malformed variable declaration in function definition.");
+            }
+            argument += 2;
+        }
+        
+        parent.get()->members.push_back(functionAST);
+        return functionAST;
+    } else {
+        throw std::domain_error("Expected label identifier, found something else. Aborting.");
+    }
+}
+
+
+std::shared_ptr<CitizenAST> parseExpression(
+    std::vector<Token> stack,
+    std::shared_ptr<CitizenAST> parent,
+    int depth
+) {
+    // Check for operator shorthand (e.g. var ... op).
+    if (stack[0].type == TOK_IDENTIFIER_ALIAS) {
+        TokenType type = stack.back().type;
+        if (
+            type == TOK_ADD
+         || type == TOK_SUBTRACT
+         || type == TOK_MULTIPLY
+         || type == TOK_DIVIDE
+         || type == TOK_MODULUS
+         || type == TOK_AND
+         || type == TOK_OR
+         || type == TOK_XOR
+         || type == TOK_COMPLEMENT
+         || type == TOK_SHL
+         || type == TOK_SHR
+         || type == TOK_SSHR
+        ) {
+            stack.insert(stack.begin(), stack.front());
+            stack.push_back(Token(TOK_ASSIGNMENT));
+        }
+    }
+    std::cout << "NOT YET IMPLEMENTED: Expression [" << stack[0].type << "]" << stack.size() << " components: ";
+    for (auto t: stack) {
+        if (t.type == TOK_IDENTIFIER_ALIAS) {
+            std::cout << " " << t.sVal;
+        } else {
+            std::cout << " " << t.type;
+        }
+    }
+    std::cout << std::endl;
+    auto stackAST = std::make_shared<CitizenAST>(CitizenAST(depth, false, parent));
+    parent.get()->members.push_back(stackAST);
+    return stackAST;
+}
+
+
 std::shared_ptr<CitizenAST> parseAlias(std::vector<Token> stack, std::shared_ptr<CitizenAST> parent, int depth) {
     if (stack.size() < 3 || stack.back().type != TOK_WITH_END) {
         throw std::domain_error("Empty or malformed with statement. Aborting.");
     }
-    auto current = stack.begin() + 1;
-    bool expectDot = false;
-    int refLevel = 0;
-    std::vector<Token> link;
+    // Check for alias
     std::string alias;
-    while (current != stack.end() - 1) {
-        // TODO: I got tired here.
-        if (expectDot) {
-            if (current->type == TOK_DOT) {
-                link.push_back(*current);
-                expectDot = false;
-
-            } else if (current->type == TOK_REF_START) {
-                link.push_back(*current);
-                expectDot = false;
-                refLevel++;
-
-            } else if (current->type == TOK_REF_END) {
-                link.push_back(*current);
-                refLevel--;
-                if (refLevel < 0) {
-                    throw std::domain_error("Malformed with statement. Unmatched reference token.");
-                }
-
-            } else if (current->type == TOK_IDENTIFIER_ALIAS) {
-                alias = current->sVal;
-                break;
-            
-            } else {
-                throw std::domain_error("Unexpected argument in with statement.");
-                
-            }
-            
-        } else if (current->type == TOK_IDENTIFIER_ALIAS) {
-            link.push_back(*current);
-            expectDot = true;
-            alias = current->sVal;
-
-        } else {
-            throw std::domain_error("Unexpected argument in with statement.");
-
-        }
-        current = std::next(current);
+    std::vector<Token> exprStack;
+    auto size = stack.size();
+    auto exprEnd = stack.end() - 1;
+    if (stack[size -2].type == TOK_IDENTIFIER_ALIAS) {
+        alias = stack[size - 2].sVal;
     }
+    if (stack[size - 3].type == TOK_IDENTIFIER_ALIAS) {
+        exprEnd--;
+    }
+    exprStack.insert(exprStack.begin(), stack.begin() + 1, exprEnd);
     
     // Sanity check.
-    if (alias.empty() || link.empty() || refLevel != 0) {
+    if (alias.empty() || exprStack.empty()) {
         throw std::domain_error("Malformed with statement.");
     }
     
     auto aliasAST = std::make_shared<AliasAST>(AliasAST(alias, depth, parent));
-    parseStack(link, aliasAST, depth);
+    parseExpression(exprStack, aliasAST, depth);
     parent.get()->members.push_back(aliasAST);
     
     return parent;
-}
-
-
-std::shared_ptr<CitizenAST> parseExpression(std::vector<Token> stack, std::shared_ptr<CitizenAST> parent, int depth) {
-    std::cout << "NOT YET IMPLEMENTED: Expression [" << stack[0].type << "]" << std::endl;
-    auto stackAST = std::make_shared<CitizenAST>(CitizenAST(depth, parent));
-    parent.get()->members.push_back(stackAST);
-    return stackAST;
 }
 
 
@@ -203,7 +229,7 @@ bool parseToAST(std::vector<Token> tokens, std::shared_ptr<CitizenAST> ast) {
         int depth = ast.get()->depth;
         while (currentToken != lastToken && currentToken->type == TOK_SCOPE) {
             depth = (int)currentToken->lVal;
-            currentToken = std::next(currentToken);
+            currentToken++;
         }
         if (currentToken == lastToken) {
             break;
@@ -220,7 +246,7 @@ bool parseToAST(std::vector<Token> tokens, std::shared_ptr<CitizenAST> ast) {
         std::vector<Token> stack;
         while (currentToken != lastToken && currentToken->type != TOK_SCOPE) {
             stack.push_back(*currentToken);
-            currentToken = std::next(currentToken);
+            currentToken++;
         }
         ast = parseStack(stack, ast, depth);
     }
