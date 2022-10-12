@@ -1,0 +1,9 @@
+` Author: Neil Bradley
+` Copyright: Neil Bradley
+` License: GPL 3.0
+
+$one $two @min
+    one two <
+        min two =
+    :
+        min one =

@@ -125,6 +125,10 @@ std::shared_ptr<CitizenAST> parseExpression(
     std::shared_ptr<CitizenAST> parent,
     int depth
 ) {
+    // Sanity
+    if (stack.empty()) {
+        throw std::range_error("Empty stack. This is a bug!");
+    }
     // Check for operator shorthand (e.g. var ... op).
     if (stack[0].type == TOK_IDENTIFIER_ALIAS) {
         TokenType type = stack.back().type;
@@ -146,18 +150,66 @@ std::shared_ptr<CitizenAST> parseExpression(
             stack.push_back(Token(TOK_ASSIGNMENT));
         }
     }
-    std::cout << "NOT YET IMPLEMENTED: Expression [" << stack[0].type << "]" << stack.size() << " components: ";
-    for (auto t: stack) {
-        if (t.type == TOK_IDENTIFIER_ALIAS) {
-            std::cout << " " << t.sVal;
+    auto exprAST = std::make_shared<ExpressionAST>(ExpressionAST(depth, parent));
+    auto current = stack.begin();
+    std::vector<TokenType> notImplemented;
+    while (current != stack.end()) {
+        auto type = current->type;
+        if (type == TOK_IDENTIFIER_ALIAS) {
+            // The type of these will need to be change during semantic analysis.
+            exprAST->stack.push_back(std::make_shared<AliasAST>(AliasAST(current->sVal, depth, parent)));
+        } else if (
+            type == TOK_ADD
+         || type == TOK_SUBTRACT
+         || type == TOK_MULTIPLY
+         || type == TOK_DIVIDE
+         || type == TOK_MODULUS
+         || type == TOK_AND
+         || type == TOK_OR
+         || type == TOK_XOR
+         || type == TOK_COMPLEMENT
+         || type == TOK_SHL
+         || type == TOK_SHR
+         || type == TOK_SSHR
+         || type == TOK_DOT
+         // TODO: REF does not belong here -> it generates a nexted Expression!
+         || type == TOK_REF_START
+         || type == TOK_REF_END
+         || type == TOK_ASSIGNMENT
+         || type == TOK_COUNT
+         || type == TOK_CONTENTS
+        ) {
+            exprAST->stack.push_back(std::make_shared<OperatorAST>(OperatorAST(depth, type, parent)));
+        } else if (
+            type == TOK_EQ
+         || type == TOK_LT
+         || type == TOK_LTE
+         || type == TOK_GT
+         || type == TOK_GTE
+        ) {
+            exprAST->stack.push_back(std::make_shared<ComparatorAST>(ComparatorAST(depth, type, parent)));
+        } else if (type == TOK_NULL) {
+            exprAST->stack.push_back(std::make_shared<NullAST>(NullAST(depth, parent)));
+        } else if (type == TOK_STRING) {
+            exprAST->stack.push_back(std::make_shared<StringAST>(StringAST(current->sVal, depth, parent)));
+        } else if (type == TOK_NUMBER_LONG) {
+            exprAST->stack.push_back(std::make_shared<IntegerAST>(IntegerAST(current->lVal, depth, parent)));
+        } else if (type == TOK_NUMBER_DOUBLE) {
+            exprAST->stack.push_back(std::make_shared<FloatAST>(FloatAST(current->dVal, depth, parent)));
         } else {
-            std::cout << " " << t.type;
+            notImplemented.push_back(type);
         }
+        current++;
     }
-    std::cout << std::endl;
-    auto stackAST = std::make_shared<CitizenAST>(CitizenAST(depth, false, parent));
-    parent.get()->members.push_back(stackAST);
-    return stackAST;
+    if (!notImplemented.empty()) {
+        std::cout << "NOT YET IMPLEMENTED:";
+        for (auto t : notImplemented) {
+            std::cout << " " << t;
+        }
+        std::cout << std::endl;
+    }
+    parent.get()->members.push_back(exprAST);
+    return exprAST;
 }
 
 

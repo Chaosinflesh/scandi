@@ -1,0 +1,13 @@
+` Author: Neil Bradley
+` Copyright: Neil Bradley
+` License: GPL 3.0
+
+[] @readline
+{{
+    // C++ code goes here.
+}}
+
+[] @writeline
+{{
+    // C++ code goes here.
+}}
