@@ -278,18 +278,6 @@ size_t getSymbol(
     throw std::domain_error("Unknown symbol");
 }
 
-/*
-size_t getReference(std::vector<Token>& tokens, const std::string line, size_t pos) {
-    // There is not necessarily a reference here.
-    for (auto& r : selfReferenceMap) {
-        if (line[pos] == r.first) {
-            tokens.push_back(Token(r.second));
-            return pos + 1;
-        }
-    }
-    return pos;
-}
-*/
 
 void tokenizeLine(
     std::vector<Token>& tokensOut,
@@ -304,8 +292,9 @@ void tokenizeLine(
         while (pos < lineIn.size() && lineIn[pos] == LEX_SPACE) {
             pos++;
         }
-        auto token = Token(TOK_SCOPE_DOWN, std::string(), pos, 0.0);
-        token.setDebugInfo(filename, lineNo, 0);
+        int init_pos = getFileScopeOffset(pos);
+        auto token = Token(TOK_SCOPE_DOWN, std::string(), init_pos, 0.0);
+        token.setDebugInfo(filename, lineNo, pos);
         tokensOut.push_back(token);
         
         try {
@@ -313,9 +302,9 @@ void tokenizeLine(
                 // Check for comment
                 if (lineIn[pos] == LEX_COMMENT) {
                     auto token = Token(TOK_COMMENT, lineIn.substr(pos + 1));
-                    token.setDebugInfo(filename, lineNo, getFileScopeOffset(pos));
+                    token.setDebugInfo(filename, lineNo, pos);
                     tokensOut.push_back(token);
-                    return;
+                    break;
                 }
 
                 // Check for identifiers
@@ -339,12 +328,16 @@ void tokenizeLine(
                     pos = getSymbol(tokensOut, lineIn, pos, filename, lineNo);
                     
                 }
-                
-                // Check for symbols
             }
         } catch (const std::domain_error& de) {
             throw std::domain_error(std::to_string(pos) + ": " + de.what());
         }
+
+        // Calculate the next immediate scope (may not be used, Parser will sort
+        // it out.
+        token = Token(TOK_SCOPE_DOWN, std::string(), init_pos + 1, 0.0);
+        token.setDebugInfo(filename, lineNo, lineIn.size());
+        tokensOut.push_back(token);
     }
 }
 
