@@ -3,11 +3,10 @@
 // License: GPL 3.0
 #include <iostream>
 #include <string>
-#include "ast.h"
+//#include "ast.h"
 #include "lexer.h"
-#include "parser.h"
+//#include "parser.h"
 
-#define DEBUG
 
 int main(int argc, char** argv) {
     std::vector<Token> tokens;
@@ -22,7 +21,8 @@ int main(int argc, char** argv) {
         std::cout << t << std::endl;
     }
 #endif
-    
+
+/*
     // 2. Parse
     auto global = std::make_shared<CitizenAST>(CitizenAST(-1, true, std::shared_ptr<CitizenAST>(nullptr)));
     auto ast = std::make_shared<DeclaredCitizenAST>(DeclaredCitizenAST("file_level", TOK_DECLARATION_VARIABLE, 0, true, global));
@@ -30,11 +30,12 @@ int main(int argc, char** argv) {
     if (!parseToAST(tokens, ast)) {
         std::cerr << "PARSING FAILED" << std::endl;
     }
-#ifdef DEBUG
+//#ifdef DEBUG
     std::cout << *global << std::endl;
-#endif
+//#endif
 
     // 3. Semantic analysis
     //    TODO: Add in stdlib here
     return 0;
+*/
 }

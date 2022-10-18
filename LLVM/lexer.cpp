@@ -8,118 +8,145 @@
 #include <vector>
 #include "lexer.h"
 
+#define LEX_SPACE             ' '
+#define LEX_COMMENT           '`'
 
-#define LEX_SPACE                    ' '
-#define LEX_COMMENT                  '`'
-#define LEX_WITH_START               '{'
-#define LEX_WITH_END                 '}'
-#define LEX_LABEL                    '\\'
-#define LEX_ADDRESS                  "__"
-#define LEX_VARIABLE                 '$'
-#define LEX_VARIABLE_STATIC          "$$"
-#define LEX_FUNCTION                 '@'
-#define LEX_FUNCTION_STATIC          "@@"
-#define LEX_NUMBER_HEXADECIMAL       '#'
-#define LEX_DECIMAL_POINT            ','
-#define LEX_STRING_QUOTES            '"'
-#define LEX_STRING_APOSTROPHE        '\''
-#define LEX_BINARY                   '_'
-#define LEX_NULL                     "()"
-#define LEX_VARARGS                  "[]"
-#define LEX_ASSIGNMENT               '='
-#define LEX_COMPARISON_EQ            '?'
-#define LEX_COMPARISON_LT            '<'
-#define LEX_COMPARISON_LTE           "?<"
-#define LEX_COMPARISON_GT            '>'
-#define LEX_COMPARISON_GTE           "?>"
-#define LEX_ELSE                     ':'
-#define LEX_UNARY_COMPLEMENT         '~'
-#define LEX_NEGATE_START             '('
-#define LEX_NEGATE_END               ')'
-#define LEX_BINARY_AND               '&'
-#define LEX_BINARY_OR                '|'
-#define LEX_BINARY_XOR               '^'
-#define LEX_BINARY_ADD               '+'
-#define LEX_BINARY_SUBTRACT          '-'
-#define LEX_BINARY_MULTIPLY          '*'
-#define LEX_BINARY_DIVIDE            '/'
-#define LEX_BINARY_MODULUS           '%'
-#define LEX_UNARY_SHIFT_LEFT         "<-"
-#define LEX_UNARY_SHIFT_RIGHT        "->"
-#define LEX_UNARY_SIGNED_SHIFT_RIGHT ">>"
-#define LEX_DOT_OPERATOR             '.'
-#define LEX_REFERENCE_START          '['
-#define LEX_REFERENCE_END            ']'
-#define LEX_COUNT                    '!'
+#define LEX_LABEL_DECL        '\\'
+#define LEX_VARIABLE_DECL     '$'
+#define LEX_VARIABLE_STATIC   "$$"
+#define LEX_FUNCTION_DECL     '@'
+#define LEX_FUNCTION_STATIC   "@@"
+
+#define LEX_ALIAS_BEGIN       '{'
+#define LEX_ALIAS_END         '}'
+
+#define LEX_ADDRESS           "__"
+#define LEX_HEXADECIMAL       '#'
+#define LEX_DECIMAL_POINT     ','
+#define LEX_STRING_1          '\''
+#define LEX_STRING_2          '"'
+#define LEX_BINARY_BLOB       '_'
+
+#define LEX_NULL              "()"
+#define LEX_VARARGS_CONTENTS  "[]"
+#define LEX_COUNT             '!'
+#define LEX_DOT               '.'
+#define LEX_REFERENCE_BEGIN   '['
+#define LEX_REFERENCE_END     ']'
+   
+#define LEX_ASSIGNMENT        '='
+#define LEX_NEGATE_BEGIN      '('
+#define LEX_NEGATE_END        ')'
+    
+#define LEX_ADD               '+'
+#define LEX_SUB               '-'
+#define LEX_MULTIPLY          '*'
+#define LEX_DIVIDE            '/'
+#define LEX_MODULUS           '%'
+
+#define LEX_COMPLEMENT        '~'
+#define LEX_AND               '&'
+#define LEX_OR                '|'
+#define LEX_XOR               '^'
+#define LEX_SHL               "<-"
+#define LEX_SHR               "->"
+#define LEX_SSHR              ">>"
+    
+#define LEX_EQ                '?'
+#define LEX_LT                '<'
+#define LEX_LTE               "?<"
+#define LEX_GT                '>'
+#define LEX_GTE               "?>"
+#define LEX_ELSE              ':'
 
 
+// Note that context-aware symbols & digraphs are handle in their own routine.
+
+// Context-agnostic digraphs
 std::map<std::string, TokenType> digraphMap {
-    {LEX_ADDRESS,                  TOK_ADDRESS                    },
-    {LEX_VARIABLE_STATIC,          TOK_DECLARATION_VARIABLE_STATIC},
-    {LEX_FUNCTION_STATIC,          TOK_DECLARATION_FUNCTION_STATIC},
-    {LEX_NULL,                     TOK_NULL                       },
-    {LEX_VARARGS,                  TOK_VARARGS                    },
-    {LEX_COMPARISON_LTE,           TOK_LTE                        },
-    {LEX_COMPARISON_GTE,           TOK_GTE                        },
-    {LEX_UNARY_SHIFT_LEFT,         TOK_SHL                        },
-    {LEX_UNARY_SHIFT_RIGHT,        TOK_SHR                        },
-    {LEX_UNARY_SIGNED_SHIFT_RIGHT, TOK_SSHR                       }
+    {LEX_VARIABLE_STATIC, TOK_VARIABLE_STATIC},
+    {LEX_FUNCTION_STATIC, TOK_FUNCTION_STATIC},
+    {LEX_ADDRESS,         TOK_ADDRESS},
+    {LEX_NULL,            TOK_NULL},
+    {LEX_SHL,             TOK_SHL},
+    {LEX_SHR,             TOK_SHR},
+    {LEX_SSHR,            TOK_SSHR},
+    {LEX_LTE,             TOK_LTE},
+    {LEX_GTE,             TOK_GTE}
 };
 
-
+// Context-agnostic symbols
 std::map<char, TokenType> symbolMap {
-    {LEX_WITH_START,          TOK_WITH_START          },
-    {LEX_WITH_END,            TOK_WITH_END            },
-    {LEX_LABEL,               TOK_DECLARATION_LABEL   },
-    {LEX_VARIABLE,            TOK_DECLARATION_VARIABLE},
-    {LEX_FUNCTION,            TOK_DECLARATION_FUNCTION},
-    {LEX_NUMBER_HEXADECIMAL,  TOK_NUMBER_HEXADECIMAL  },
-    {LEX_BINARY,              TOK_BINARY_BLOB         },
-    {LEX_ASSIGNMENT,          TOK_ASSIGNMENT          },
-    {LEX_COMPARISON_EQ,       TOK_EQ                  },
-    {LEX_COMPARISON_LT,       TOK_LT                  },
-    {LEX_COMPARISON_GT,       TOK_GT                  },
-    {LEX_ELSE,                TOK_ELSE                },
-    {LEX_UNARY_COMPLEMENT,    TOK_COMPLEMENT          },
-    {LEX_NEGATE_START,        TOK_NEGATE_START        },
-    {LEX_NEGATE_END,          TOK_NEGATE_END          },
-    {LEX_BINARY_AND,          TOK_AND                 },
-    {LEX_BINARY_OR,           TOK_OR                  },
-    {LEX_BINARY_XOR,          TOK_XOR                 },
-    {LEX_BINARY_ADD,          TOK_ADD                 },
-    {LEX_BINARY_SUBTRACT,     TOK_SUBTRACT            },
-    {LEX_BINARY_MULTIPLY,     TOK_MULTIPLY            },
-    {LEX_BINARY_DIVIDE,       TOK_DIVIDE              },
-    {LEX_BINARY_MODULUS,      TOK_MODULUS             },
-    {LEX_DOT_OPERATOR,        TOK_DOT                 },
-    {LEX_REFERENCE_START,     TOK_REF_START           },
-    {LEX_REFERENCE_END,       TOK_REF_END             },
-    {LEX_COUNT,               TOK_COUNT               }
+    {LEX_LABEL_DECL,      TOK_LABEL_DECL},
+    {LEX_VARIABLE_DECL,   TOK_VARIABLE_DECL},
+    {LEX_FUNCTION_DECL,   TOK_FUNCTION_DECL},
+    {LEX_ALIAS_BEGIN,     TOK_ALIAS_BEGIN},
+    {LEX_ALIAS_END,       TOK_ALIAS_END},
+    {LEX_HEXADECIMAL,     TOK_HEXADECIMAL},
+    {LEX_BINARY_BLOB,     TOK_BINARY_BLOB},
+    {LEX_REFERENCE_END,   TOK_REFERENCE_END},
+    {LEX_ASSIGNMENT,      TOK_ASSIGNMENT},
+    {LEX_NEGATE_BEGIN,    TOK_NEGATE_BEGIN},
+    {LEX_NEGATE_END,      TOK_NEGATE_END},
+    {LEX_ADD,             TOK_ADD},
+    {LEX_SUB,             TOK_SUB},
+    {LEX_MULTIPLY,        TOK_MULTIPLY},
+    {LEX_DIVIDE,          TOK_DIVIDE},
+    {LEX_MODULUS,         TOK_MODULUS},
+    {LEX_COMPLEMENT,      TOK_COMPLEMENT},
+    {LEX_AND,             TOK_AND},
+    {LEX_OR,              TOK_OR},
+    {LEX_XOR,             TOK_XOR},
+    {LEX_EQ,              TOK_EQ},
+    {LEX_LT,              TOK_LT},
+    {LEX_GT,              TOK_GT},
+    {LEX_ELSE,            TOK_ELSE}
 };
 
 
-std::ostream& operator<<(std::ostream& o, const Token& t) {
-    o << "[" << t.type << "]" << t.sVal << ": " << t.lVal << " " << t.dVal;
-    return o;
+// Ensure consistency of scope.
+inline size_t getFileScopeOffset(size_t pos) {
+    return pos + 1;
 }
 
 
-size_t getIdentifier(std::vector<Token>& tokens, const std::string line, size_t pos) {
+// Identifiers are contiguous blocks of alphanumeric characters starting with a
+// letter.
+size_t getIdentifier(
+    std::vector<Token>& tokensOut,
+    const std::string lineIn,
+    size_t pos,
+    const std::string filename,
+    const int lineNo
+) {
     std::string identifier;
-    while (pos < line.size() && isalnum(line[pos])) {
-        identifier += line[pos];
+    auto init_pos = pos;
+    while (pos < lineIn.size() && isalnum(lineIn[pos])) {
+        identifier += lineIn[pos];
         pos++;
     }
-    tokens.push_back(Token(TOK_IDENTIFIER_ALIAS, identifier));
+    auto token = Token(TOK_IDENTIFIER, identifier);
+    token.setDebugInfo(filename, lineNo, init_pos);
+    tokensOut.push_back(token);
     return pos;
 }
 
 
-size_t getNumber(std::vector<Token>& tokens, const std::string line, size_t pos) {
+// Numbers are digits that may contain a single decimal point.
+size_t getNumber(
+    std::vector<Token>& tokensOut,
+    const std::string lineIn,
+    size_t pos,
+    const std::string filename,
+    const int lineNo
+) {
     std::string number;
     bool decimalSeen = false;
-    while (pos < line.size() && (isdigit(line[pos]) || line[pos] == LEX_DECIMAL_POINT)) {
-        if (line[pos] == LEX_DECIMAL_POINT) {
+    size_t init_pos = pos;
+
+    // Build the number up.
+    while (pos < lineIn.size() && (isdigit(lineIn[pos]) || lineIn[pos] == LEX_DECIMAL_POINT)) {
+        if (lineIn[pos] == LEX_DECIMAL_POINT) {
             // Oops. malformed number!
             if (decimalSeen) {
                 throw std::domain_error("Extraneous decimal point");
@@ -128,66 +155,122 @@ size_t getNumber(std::vector<Token>& tokens, const std::string line, size_t pos)
             }
             number += ".";
         } else {
-            number += line[pos];
+            number += lineIn[pos];
         }
         pos++;
     }
+
+    // Create the correct type of token.
     if (decimalSeen) {
-        tokens.push_back(Token(std::stod(number)));
+        auto token = Token(std::stod(number));
+        token.setDebugInfo(filename, lineNo, init_pos);
+        tokensOut.push_back(token);
     } else {
-        tokens.push_back(Token(std::stol(number)));
+        auto token = Token(std::stol(number));
+        token.setDebugInfo(filename, lineNo, init_pos);
+        tokensOut.push_back(token);
     }
     return pos;
 }
 
 
-size_t getString(std::vector<Token>& tokens, const std::string line, size_t pos) {
+size_t getString(
+    std::vector<Token>& tokensOut,
+    const std::string lineIn,
+    size_t pos,
+    const std::string filename,
+    const int lineNo
+) {
     std::string str;
-    char delimiter = line[pos];
+    char delimiter = lineIn[pos];
     bool inString = true;
+    size_t init_pos = pos;
     pos++;
-    while (pos < line.size() && inString) {
-        if (line[pos] == delimiter) {
+    
+    while (pos < lineIn.size() && inString) {
+        if (lineIn[pos] == delimiter) {
             // Need to check next char is not a continuation.
             pos++;
-            if (pos < line.size() && (line[pos] == LEX_STRING_QUOTES || line[pos] == LEX_STRING_APOSTROPHE)) {
-                delimiter = line[pos];
+            if (pos < lineIn.size() && (lineIn[pos] == LEX_STRING_1 || lineIn[pos] == LEX_STRING_2)) {
+                delimiter = lineIn[pos];
                 pos++;
             } else {
                 inString = false;
             }
         } else {
-            str += line[pos];
+            str += lineIn[pos];
             pos++;
         }
     }
-    tokens.push_back(Token(TOK_STRING, str));
+    
+    auto token = Token(TOK_STRING, str);
+    token.setDebugInfo(filename, lineNo, init_pos);
+    tokensOut.push_back(token);
     return pos;
 }
 
 
-size_t getSymbol(std::vector<Token>& tokens, const std::string line, size_t pos) {
-    std::string local = line.substr(pos);
-    
-    // Digraphs first
-    if (pos < line.size() - 1) {
-        for (auto& d : digraphMap) {
-            if (local.rfind(d.first, 0) == 0) {
-                if (pos > 0 && d.second == TOK_VARARGS && line[pos - 1] != LEX_SPACE) {
-                    tokens.push_back(Token(TOK_CONTENTS));
-                } else {
-                    tokens.push_back(Token(d.second));
-                }
-                return pos + 2;
-            }
+size_t getSymbol(
+    std::vector<Token>& tokensOut,
+    const std::string lineIn,
+    size_t pos,
+    const std::string filename,
+    const int lineNo
+) {
+    std::string local = lineIn.substr(pos);
+
+    // Context-dependent lexes first. Note that the context-dependent lexes will
+    // also trigger at the start of an alias.
+    bool inContext = (
+        pos > 0
+     && lineIn[pos - 1] != LEX_SPACE
+     && lineIn[pos - 1] != LEX_ALIAS_BEGIN
+    );
+    if (lineIn[pos] == LEX_COUNT) {
+        auto token = Token(inContext ? TOK_COUNT : TOK_SELF_COUNT);
+        token.setDebugInfo(filename, lineNo, pos);
+        tokensOut.push_back(token);
+        return ++pos;
+
+    } else if (lineIn[pos] == LEX_DOT) {
+        auto token = Token(inContext ? TOK_DOT : TOK_SELF_DOT);
+        token.setDebugInfo(filename, lineNo, pos);
+        tokensOut.push_back(token);
+        return ++pos;
+
+    } else if (local.rfind(LEX_VARARGS_CONTENTS, 0) == 0) {
+        // Note that self-contents will be corrected to vararg during semantic
+        // analysis if appropriate.
+        auto token = Token(inContext ? TOK_CONTENTS : TOK_SELF_CONTENTS);
+        token.setDebugInfo(filename, lineNo, pos);
+        tokensOut.push_back(token);
+        return pos + 2;
+
+    } else if (lineIn[pos] == LEX_REFERENCE_BEGIN) {
+        auto token = Token(inContext ? TOK_REFERENCE_BEGIN : TOK_SELF_REFERENCE);
+        token.setDebugInfo(filename, lineNo, pos);
+        tokensOut.push_back(token);
+        return ++pos;
+
+    }
+
+    // Digraphs second
+    for (auto& d : digraphMap) {
+        if (local.rfind(d.first, 0) == 0) {
+            auto token = Token(d.second);
+            token.setDebugInfo(filename, lineNo, pos);
+            tokensOut.push_back(token);
+            return pos + 2;
         }
     }
     
     // Other symbols
     for (auto& s: symbolMap) {
-        if (line[pos] == s.first) {
-            tokens.push_back(Token(s.second));
-            return pos + 1;
+        if (lineIn[pos] == s.first) {
+            auto token = Token(s.second);
+            token.setDebugInfo(filename, lineNo, pos);
+            tokensOut.push_back(token);
+            return ++pos;
         }
     }
     
@@ -195,46 +278,69 @@ size_t getSymbol(std::vector<Token>& tokens, const std::string line, size_t pos)
     throw std::domain_error("Unknown symbol");
 }
 
+/*
+size_t getReference(std::vector<Token>& tokens, const std::string line, size_t pos) {
+    // There is not necessarily a reference here.
+    for (auto& r : selfReferenceMap) {
+        if (line[pos] == r.first) {
+            tokens.push_back(Token(r.second));
+            return pos + 1;
+        }
+    }
+    return pos;
+}
+*/
 
-void tokenizeLine(std::vector<Token>& tokens, const std::string line) {
-    if (!line.empty()) {
+void tokenizeLine(
+    std::vector<Token>& tokensOut,
+    const std::string lineIn,
+    const std::string filename,
+    const int lineNo
+) {
+    if (!lineIn.empty()) {
         size_t pos = 0;
 
-        // Check scope. Scope within files starts at 1, as 0 is
-        // considered global.
-        while (pos < line.size() && line[pos] == LEX_SPACE) {
+        // Check scope. File scope is 0, global is -1.
+        while (pos < lineIn.size() && lineIn[pos] == LEX_SPACE) {
             pos++;
         }
-        tokens.push_back(Token(TOK_SCOPE, std::string(), (int)pos + 1, 0.0));
+        auto token = Token(TOK_SCOPE_DOWN, std::string(), pos, 0.0);
+        token.setDebugInfo(filename, lineNo, 0);
+        tokensOut.push_back(token);
         
         try {
-            while (pos < line.size()) {
+            while (pos < lineIn.size()) {
                 // Check for comment
-                if (line[pos] == LEX_COMMENT) {
+                if (lineIn[pos] == LEX_COMMENT) {
+                    auto token = Token(TOK_COMMENT, lineIn.substr(pos + 1));
+                    token.setDebugInfo(filename, lineNo, getFileScopeOffset(pos));
+                    tokensOut.push_back(token);
                     return;
                 }
-                
+
                 // Check for identifiers
-                if (isalpha(line[pos])) {
-                    pos = getIdentifier(tokens, line, pos);
+                if (isalpha(lineIn[pos])) {
+                    pos = getIdentifier(tokensOut, lineIn, pos, filename, lineNo);
 
                 // Check for numbers
-                } else if (isdigit(line[pos]) || line[pos] == LEX_DECIMAL_POINT) {
-                    pos = getNumber(tokens, line, pos);
-                
-                // Check for strings
-                } else if (line[pos] == LEX_STRING_QUOTES || line[pos] == LEX_STRING_APOSTROPHE) {
-                    pos = getString(tokens, line, pos);
+                } else if (isdigit(lineIn[pos]) || lineIn[pos] == LEX_DECIMAL_POINT) {
+                    pos = getNumber(tokensOut, lineIn, pos, filename, lineNo);
 
-                // Check for symbols
+                // Check for strings
+                } else if (lineIn[pos] == LEX_STRING_1 || lineIn[pos] == LEX_STRING_2) {
+                    pos = getString(tokensOut, lineIn, pos, filename, lineNo);
+
+                // Skips spaces
+                } else if (lineIn[pos] == LEX_SPACE) {
+                    pos++;
+
+                // Check for implemented symbols.                    
                 } else {
-                    pos = getSymbol(tokens, line, pos);
+                    pos = getSymbol(tokensOut, lineIn, pos, filename, lineNo);
+                    
                 }
                 
-                // Skip spaces
-                while (pos < line.size() && line[pos] == LEX_SPACE) {
-                    pos++;
-                }
+                // Check for symbols
             }
         } catch (const std::domain_error& de) {
             throw std::domain_error(std::to_string(pos) + ": " + de.what());
@@ -243,17 +349,31 @@ void tokenizeLine(std::vector<Token>& tokens, const std::string line) {
 }
 
 
-bool tokenizeStream(std::vector<Token>& tokens, std::istream& in, const std::string name) {
+bool tokenizeStream(
+    std::vector<Token>& tokensOut,
+    std::istream& streamIn,
+    const std::string filename
+) {
     bool success = true;
     int lineNo = 1;
-    for (std::string line; std::getline(in, line); ) {
+    for (std::string line; std::getline(streamIn, line); ) {
         try {
-            tokenizeLine(tokens, line);
+            tokenizeLine(tokensOut, line, filename, lineNo);
         } catch (std::domain_error& de) {
-            std::cerr << "LEXER: " << name << "@" << lineNo << ": " << de.what() << std::endl;
+            std::cerr << "LEXER: " << filename << "@" << lineNo << ": " << de.what() << std::endl;
             success = false;
         }
         lineNo++;
     }
     return success;
+}
+
+
+std::ostream& operator<<(std::ostream& o, const Token& t) {
+    o << std::string(t.pos, ' ');
+    o << "[" << t.type << ",\"" << t.sVal << "\"," << t.lVal << "," << t.dVal << "]";
+#ifdef DEBUG
+    o << "(" << t.filename << ":" << t.lineNo << "@" << t.pos << ")";
+#endif
+    return o;
 }

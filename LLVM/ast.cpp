@@ -119,12 +119,24 @@ std::ostream& operator<<(std::ostream& os, const FunctionAST& function) {
 
 
 std::ostream& operator<<(std::ostream& os, const ExpressionAST& expression) {
+    // Check if parent is also an expression, in which case we don't want to
+    // generate excess spaces or new lines.
+    bool displayWhitespace = (expression.scope->depth != expression.depth);
     std::string depth(expression.depth, ' ');
-    os << depth << "Expression:";
-    for (auto s : expression.stack) {
-        os << "  " << *s << "  ";
+    os << expression.depth << "[" << expression.scope->depth << "] ";
+    if (displayWhitespace) {
+        os << depth << "Expression:";
     }
-    os << std::endl;
+    for (auto s : expression.stack) {
+        if (s->printId == CITIZEN_EXPRESSION) {
+            os << "  [" << *s << "]  ";
+        } else {
+            os << "  " << *s << "  ";
+        }
+    }
+    if (displayWhitespace) {
+        os << std::endl;
+    }
     for (auto member : expression.members) {
         os << *member;
     }
@@ -147,8 +159,6 @@ std::ostream& operator<<(std::ostream& os, const OperatorAST& op) {
     std::string opCode;
     switch (op.type) {
         case TOK_DOT: opCode = "."; break;
-        case TOK_REF_START: opCode = "["; break;
-        case TOK_REF_END: opCode = "]"; break;
         case TOK_ADD: opCode = "+"; break;
         case TOK_MULTIPLY: opCode = "*"; break;
         case TOK_SUBTRACT: opCode = "-"; break;

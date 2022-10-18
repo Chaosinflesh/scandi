@@ -1,6 +1,9 @@
+// Scandi: lexer.h
+//
 // Author: Neil Bradley
 // Copyright: Neil Bradley
 // License: GPL 3.0
+
 #pragma once
 #include <iostream>
 #include <string>
@@ -8,103 +11,138 @@
 
 
 enum TokenType {
-    TOK_SCOPE                       =  -1,
-    TOK_IDENTIFIER_VARIABLE         =  -2,
-    TOK_IDENTIFIER_FUNCTION         =  -3,
-    TOK_IDENTIFIER_LABEL            =  -4,
-    TOK_IDENTIFIER_ALIAS            =  -5,
-    TOK_DECLARATION_VARIABLE        =  -6,
-    TOK_DECLARATION_VARIABLE_STATIC =  -7,
-    TOK_DECLARATION_FUNCTION        =  -8,
-    TOK_DECLARATION_FUNCTION_STATIC =  -9,
-    TOK_DECLARATION_LABEL           = -10,
-    TOK_ADDRESS                     = -11,
-    TOK_WITH_START                  = -12,
-    TOK_WITH_END                    = -13,
-    TOK_NUMBER_LONG                 = -14,
-    TOK_NUMBER_DOUBLE               = -15,
-    TOK_STRING                      = -16,
-    TOK_BINARY_BLOB                 = -17,
-    TOK_NULL                        = -18,
-    TOK_VARARGS                     = -19,
-    TOK_ASSIGNMENT                  = -20,
-    TOK_EQ                          = -21,
-    TOK_LT                          = -22,
-    TOK_LTE                         = -23,
-    TOK_GT                          = -24,
-    TOK_GTE                         = -25,
-    TOK_ELSE                        = -26,
-    TOK_COMPLEMENT                  = -27,
-    TOK_NEGATE_START                = -28,
-    TOK_NEGATE_END                  = -29,
-    TOK_AND                         = -30,
-    TOK_OR                          = -31,
-    TOK_XOR                         = -32,
-    TOK_ADD                         = -33,
-    TOK_SUBTRACT                    = -34,
-    TOK_MULTIPLY                    = -35,
-    TOK_DIVIDE                      = -36,
-    TOK_MODULUS                     = -37,
-    TOK_SHL                         = -38,
-    TOK_SHR                         = -39,
-    TOK_SSHR                        = -40,
-    TOK_DOT                         = -41,
-    TOK_REF_START                   = -42,
-    TOK_REF_END                     = -43,
-    TOK_COUNT                       = -44,
-    TOK_CONTENTS                    = -45,
-    TOK_NUMBER_HEXADECIMAL          = -46,
-    TOK_EOL                         = -98,
-    TOK_EOF                         = -99
+    TOK_SCOPE_DOWN        =  48,  // Spaces at the start of a line.  Also line
+                                  //   scope + 1 at the end of a line.
+    TOK_SCOPE_UP          =  49,  // Calculated when the scope drops, as
+                                  //   determined by the scope of the next
+                                  //   non-empty line, or end of file.
+    TOK_COMMENT           =  50,  // ` to end of line
+
+    TOK_LABEL_DECL        =  64,  // \.
+    TOK_VARIABLE_DECL     =  65,  // $
+    TOK_VARIABLE_STATIC   =  66,  // $$
+    TOK_FUNCTION_DECL     =  67,  // @
+    TOK_FUNCTION_STATIC   =  68,  // @@
+
+    TOK_IDENTIFIER        =  80,  // All token/whitespace-delimited words
+    TOK_ALIAS_BEGIN       =  81,  // {
+    TOK_ALIAS_END         =  82,  // }
+
+    TOK_ADDRESS           =  96,  // __
+    TOK_HEXADECIMAL       =  97,  // # - a number in hexadecimal follows
+    TOK_NUMBER_DOUBLE     =  98,  // All numbers containing ','
+    TOK_NUMBER_LONG       =  99,  // All numbers that are NOT double
+    TOK_STRING            = 100,  // Contiguous blocks delimited by ' or "
+    TOK_BINARY_BLOB       = 101,  // _ - in hexadecimal
+
+    TOK_NULL              = 112,  // ()
+    TOK_VARARGS           = 113,  // [] in function declaration context
+    TOK_CONTENTS          = 114,  // [] with context
+    TOK_SELF_CONTENTS     = 115,  // [] without context
+    TOK_COUNT             = 116,  // !  with context
+    TOK_SELF_COUNT        = 117,  // !  without context
+    TOK_DOT               = 118,  // .  with context
+    TOK_SELF_DOT          = 119,  // .  without context
+    TOK_REFERENCE_BEGIN   = 120,  // [  with context
+    TOK_REFERENCE_END     = 121,  // ]
+    TOK_SELF_REFERENCE    = 122,  // [  without context
+   
+    TOK_ASSIGNMENT        = 128,  // =
+    TOK_NEGATE_BEGIN      = 129,  // (
+    TOK_NEGATE_END        = 130,  // )
+    
+    TOK_ADD               = 144,  // +
+    TOK_SUB               = 145,  // -
+    TOK_MULTIPLY          = 146,  // *
+    TOK_DIVIDE            = 147,  // /
+    TOK_MODULUS           = 148,  // %
+
+    TOK_COMPLEMENT        = 160,  // ~
+    TOK_AND               = 161,  // &
+    TOK_OR                = 162,  // |
+    TOK_XOR               = 163,  // ^
+    TOK_SHL               = 164,  // <-
+    TOK_SHR               = 165,  // ->
+    TOK_SSHR              = 166,  // >>
+    
+    TOK_EQ                = 176,  // ?
+    TOK_LT                = 177,  // <
+    TOK_LTE               = 178,  // ?<
+    TOK_GT                = 179,  // >
+    TOK_GTE               = 180,  // ?>
+    TOK_ELSE              = 181,  // :
 };
 
 
 class Token {
     public:
+        // Lexer information
         TokenType type;
         std::string sVal;
         int lVal;
         double dVal;
+        
+        // Debug information
+        std::string filename;
+        int lineNo;
+        size_t pos;
     
-        Token(TokenType type, std::string sVal, long lVal, double dVal) {
-            this->type = type;
-            this->sVal = sVal;
-            this->lVal = lVal;
-            this->dVal = dVal;
-        }
-        
-        Token(TokenType type) {
-            this->type = type;
-            this->sVal = std::string();
-            this->lVal = 0L;
-            this->dVal = 0.0;
-        }
-        
-        Token(TokenType type, std::string sVal) {
-            this->type = type;
-            this->sVal = sVal;
-            this->lVal = 0L;
-            this->dVal = 0.0;
-        }
-        
-        Token(long lVal) {
-            this->type = TOK_NUMBER_LONG;
-            this->sVal = std::string();
-            this->lVal = lVal;
-            this->dVal = 0.0;
-        }
-        
-        Token(double dVal) {
-            this->type = TOK_NUMBER_DOUBLE;
-            this->sVal = std::string();
-            this->lVal = 0L;
-            this->dVal = dVal;
+        Token(
+            TokenType type,
+            std::string sVal,
+            long lVal,
+            double dVal
+        ) :
+            type(type),
+            sVal(sVal),
+            lVal(lVal),
+            dVal(dVal)
+        {}
+
+        // Value-less token.        
+        Token(TokenType type) :
+            type(type),
+            sVal(std::string()),
+            lVal(0L),
+            dVal(0.0)
+        {}
+
+        // String-type token.
+        Token(TokenType type, std::string sVal) :
+            type(type),
+            sVal(sVal),
+            lVal(0L),
+            dVal(0.0)
+        {}
+
+        // Long-type token
+        Token(long lVal) :
+            type(TOK_NUMBER_LONG),
+            sVal(std::string()),
+            lVal(lVal),
+            dVal(0.0)
+        {}
+
+        // Double-type token
+        Token(double dVal) :
+            type(TOK_NUMBER_DOUBLE),
+            sVal(std::string()),
+            lVal(0L),
+            dVal(dVal)
+        {}
+
+        // Inject debug information in.
+        inline void setDebugInfo(std::string filename, int lineNo, size_t pos) {
+            this->filename = filename;
+            this->lineNo = lineNo;
+            this->pos = pos;
         }
 };
-std::ostream& operator<<(std::ostream&, const Token&);
+std::ostream& operator<<(std::ostream& outStream, const Token& token);
 
 
-void tokenizeLine(std::vector<Token>&, const std::string);
-
-
-bool tokenizeStream(std::vector<Token>&, std::istream&, const std::string);
+bool tokenizeStream(
+    std::vector<Token>& tokensOut,
+    std::istream& streamIn,
+    const std::string filename
+);

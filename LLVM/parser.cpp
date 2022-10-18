@@ -123,14 +123,15 @@ std::shared_ptr<CitizenAST> parseFunctionDeclaration(
 std::shared_ptr<CitizenAST> parseExpression(
     std::vector<Token> stack,
     std::shared_ptr<CitizenAST> parent,
-    int depth
+    int depth,
+    bool isSub
 ) {
     // Sanity
     if (stack.empty()) {
         throw std::range_error("Empty stack. This is a bug!");
     }
     // Check for operator shorthand (e.g. var ... op).
-    if (stack[0].type == TOK_IDENTIFIER_ALIAS) {
+    if (!isSub && stack[0].type == TOK_IDENTIFIER_ALIAS) {
         TokenType type = stack.back().type;
         if (
             type == TOK_ADD
@@ -155,7 +156,34 @@ std::shared_ptr<CitizenAST> parseExpression(
     std::vector<TokenType> notImplemented;
     while (current != stack.end()) {
         auto type = current->type;
-        if (type == TOK_IDENTIFIER_ALIAS) {
+        if (type == TOK_REF_START) {
+            int refCount = 1;
+            std::vector<Token> subExpr;
+            current++;
+            while (current != stack.end() && refCount > 0) {
+                if (current->type == TOK_REF_START) {
+                    refCount++;
+                } else if (current->type == TOK_REF_END) {
+                    refCount--;
+                }
+                if (refCount != 0) {
+                    subExpr.push_back(*current);
+                }
+                current++;
+            }
+            if (refCount > 0) {
+                throw std::domain_error("Unclosed reference.");
+            }
+            auto sub = parseExpression(subExpr, exprAST, depth, true);
+            exprAST->stack.push_back(sub);
+            auto verify = exprAST->members.back();
+            if (sub == verify) {
+                exprAST->members.pop_back();
+            } else {
+                throw std::domain_error("Removed wrong element from parent. This is a bug!");
+            }
+            
+        } else if (type == TOK_IDENTIFIER_ALIAS) {
             // The type of these will need to be change during semantic analysis.
             exprAST->stack.push_back(std::make_shared<AliasAST>(AliasAST(current->sVal, depth, parent)));
         } else if (
@@ -172,9 +200,6 @@ std::shared_ptr<CitizenAST> parseExpression(
          || type == TOK_SHR
          || type == TOK_SSHR
          || type == TOK_DOT
-         // TODO: REF does not belong here -> it generates a nexted Expression!
-         || type == TOK_REF_START
-         || type == TOK_REF_END
          || type == TOK_ASSIGNMENT
          || type == TOK_COUNT
          || type == TOK_CONTENTS
@@ -236,7 +261,7 @@ std::shared_ptr<CitizenAST> parseAlias(std::vector<Token> stack, std::shared_ptr
     }
     
     auto aliasAST = std::make_shared<AliasAST>(AliasAST(alias, depth, parent));
-    parseExpression(exprStack, aliasAST, depth);
+    parseExpression(exprStack, aliasAST, depth, false);
     parent.get()->members.push_back(aliasAST);
     
     return parent;
@@ -268,7 +293,7 @@ std::shared_ptr<CitizenAST> parseStack(std::vector<Token> stack, std::shared_ptr
         
     }
     
-    return parseExpression(stack, parent, depth);
+    return parseExpression(stack, parent, depth, false);
 }
 
 

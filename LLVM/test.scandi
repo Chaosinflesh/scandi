@@ -17,3 +17,13 @@ $var1                                       ` Expected Declaration->var1
 
 $$var2                                      ` Expected Declaration->var2 +STATIC
     @@func5                                 ` Expected Declaration->func5 + STATIC
+
+`nested[ once yes + ] 2 =
+`nested[ once yes +[ perhaps twice - ] ] 2 =
+
+` Below has been problematic, they should all parse.
+this [has[nested inner -]] loops
+    this [has[nested inner -]] loops
+
+this [has one +] loop
+    this [has[nested] 1 +] loop
