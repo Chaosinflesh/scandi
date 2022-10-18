@@ -349,6 +349,12 @@ bool tokenizeStream(
 ) {
     bool success = true;
     int lineNo = 1;
+
+    // Enter file scope
+    auto token = Token(TOK_SCOPE_DOWN, filename);
+    token.setDebugInfo(filename, 0, 0);
+    tokensOut.push_back(token);
+    
     for (std::string line; std::getline(streamIn, line); ) {
         try {
             tokenizeLine(tokensOut, line, filename, lineNo);
@@ -358,6 +364,12 @@ bool tokenizeStream(
         }
         lineNo++;
     }
+
+    // Exit file scope
+    token = Token(TOK_SCOPE_UP, std::string(), -1, 0.0);
+    token.setDebugInfo(filename, lineNo, 0);
+    tokensOut.push_back(token);
+    
     return success;
 }
 
