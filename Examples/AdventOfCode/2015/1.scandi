@@ -1,26 +1,38 @@
-` Advent of Code 2015.1
+` Advent of Code 2015.1: scandi
+`
+` Author: Neil Bradley
+` Copyright: Neil Bradley
+` License: All rights reserved.
 
 {stream.readline readline}
 {stream.writeline writeline}
 {system.stdin in}
 {system.stdout out}
 
-@a
-    $line in readline =
-    $n 0 =
-    $floor 0 =
-    \loop
-        line[n] '(' ?
-            floor 1 +
-        n 1 +
-        n line! ?
-            exit
-        loop
-    \exit
-    floor 2 * line! - out writeline
+$b 0 =                   ` Holds first time we enter basement
+$n 0 =                   ` Index within the command string
+$floor 0 =               ` Start on the ground floor
+$line in readline =      ` Read in the command
 
-@b
-    ` TODO
+\loop
+    ` Check if we are going up or down a floor. (a)
+    line[n] '(' ?
+        floor 1 +
+    :
+        floor 1 -
 
-a
-b
+    ` Check if we have entered the basement yet (b)
+    n 1 +
+    b 0 ? floor (1) ? & ?     ` Spec needs to be modified to handle this.
+        b n =
+
+    n line! ?
+        exit
+    loop
+
+\exit
+
+` Output the results
+"Final floor: " floor + out writeline    ` Spec needs to flesh out string concatenation
+"Basement entered at move " b + out writeline
+
