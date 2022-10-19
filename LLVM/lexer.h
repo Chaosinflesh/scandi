@@ -28,12 +28,11 @@ enum TokenType {
     TOK_ALIAS_BEGIN       =  81,  // {
     TOK_ALIAS_END         =  82,  // }
 
-    TOK_ADDRESS           =  96,  // __
     TOK_HEXADECIMAL       =  97,  // # - a number in hexadecimal follows
     TOK_NUMBER_DOUBLE     =  98,  // All numbers containing ','
     TOK_NUMBER_LONG       =  99,  // All numbers that are NOT double
     TOK_STRING            = 100,  // Contiguous blocks delimited by ' or "
-    TOK_BINARY_BLOB       = 101,  // _ - in hexadecimal
+    TOK_BINARY_BLOB       = 101,  // __ - in hexadecimal
 
     TOK_NULL              = 112,  // ()
     TOK_VARARGS           = 113,  // [] in function declaration context
@@ -46,6 +45,7 @@ enum TokenType {
     TOK_REFERENCE_BEGIN   = 120,  // [  with context
     TOK_REFERENCE_END     = 121,  // ]
     TOK_SELF_REFERENCE    = 122,  // [  without context
+    TOK_ADDRESS           = 123,  // _
    
     TOK_ASSIGNMENT        = 128,  // =
     TOK_NEGATE_BEGIN      = 129,  // (
