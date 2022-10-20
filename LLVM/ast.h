@@ -50,7 +50,7 @@ enum ASTType {
  ******************************************************************************/
 class ScopeAST {
 
-    private:
+    protected:
         std::string name;                                                       // Useful for debugging.
         ASTType type = AST_SCOPE;                                               // Used to determine which << operator to use.
         int depth;                                                              // This is useful for tree building.
@@ -62,12 +62,10 @@ class ScopeAST {
     public:
         ScopeAST(
             std::string name,
-            ASTType type,
             int depth,
             bool is_static
         ) :
             name(name),
-            type(type),
             depth(depth),
             is_static(is_static)
         {}
@@ -91,3 +89,66 @@ class ScopeAST {
         friend std::ostream& operator<<(std::ostream&, const ScopeAST&);
 };
 std::ostream& operator<<(std::ostream&, const ScopeAST&);
+
+
+/******************************************************************************
+ *                              LabelAST                                      *
+ ******************************************************************************/
+class LabelAST : public ScopeAST {
+
+    public:
+        LabelAST(
+            std::string name,
+            int depth,
+            bool is_static
+        ) :
+            ScopeAST(name, depth, is_static)
+        {
+            type = AST_LABEL;
+        }
+
+        friend std::ostream& operator<<(std::ostream&, const LabelAST&);
+};
+std::ostream& operator<<(std::ostream&, const LabelAST&);
+
+
+/******************************************************************************
+ *                             VariableAST                                    *
+ ******************************************************************************/
+class VariableAST : public ScopeAST {
+
+    public:
+        VariableAST(
+            std::string name,
+            int depth,
+            bool is_static
+        ) :
+            ScopeAST(name, depth, is_static)
+        {
+            type = AST_VARIABLE;
+        }
+
+        friend std::ostream& operator<<(std::ostream&, const VariableAST&);
+};
+std::ostream& operator<<(std::ostream&, const VariableAST&);
+
+
+/******************************************************************************
+ *                             FunctionAST                                    *
+ ******************************************************************************/
+class FunctionAST : public ScopeAST {
+
+    public:
+        FunctionAST(
+            std::string name,
+            int depth,
+            bool is_static
+        ) :
+            ScopeAST(name, depth, is_static)
+        {
+            type = AST_FUNCTION;
+        }
+
+        friend std::ostream& operator<<(std::ostream&, const FunctionAST&);
+};
+std::ostream& operator<<(std::ostream&, const FunctionAST&);
