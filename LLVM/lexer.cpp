@@ -1,6 +1,9 @@
+// Scandi: lexer.cpp
+//
 // Author: Neil Bradley
 // Copyright: Neil Bradley
 // License: GPL 3.0
+
 #include <iostream>
 #include <map>
 #include <stdexcept>
@@ -20,12 +23,11 @@
 #define LEX_ALIAS_BEGIN       '{'
 #define LEX_ALIAS_END         '}'
 
-#define LEX_ADDRESS           "__"
+#define LEX_ADDRESS           "_"
 #define LEX_HEXADECIMAL       '#'
 #define LEX_DECIMAL_POINT     ','
 #define LEX_STRING_1          '\''
 #define LEX_STRING_2          '"'
-#define LEX_BINARY_BLOB       '_'
 
 #define LEX_NULL              "()"
 #define LEX_VARARGS_CONTENTS  "[]"
@@ -63,7 +65,7 @@
 // Note that context-aware symbols & digraphs are handle in their own routine.
 
 // Context-agnostic digraphs
-std::map<std::string, TokenType> digraphMap {
+std::map<std::string, TokenType> digraph_map {
     {LEX_VARIABLE_STATIC, TOK_VARIABLE_STATIC},
     {LEX_FUNCTION_STATIC, TOK_FUNCTION_STATIC},
     {LEX_ADDRESS,         TOK_ADDRESS},
@@ -76,14 +78,13 @@ std::map<std::string, TokenType> digraphMap {
 };
 
 // Context-agnostic symbols
-std::map<char, TokenType> symbolMap {
+std::map<char, TokenType> symbol_map {
     {LEX_LABEL_DECL,      TOK_LABEL_DECL},
     {LEX_VARIABLE_DECL,   TOK_VARIABLE_DECL},
     {LEX_FUNCTION_DECL,   TOK_FUNCTION_DECL},
     {LEX_ALIAS_BEGIN,     TOK_ALIAS_BEGIN},
     {LEX_ALIAS_END,       TOK_ALIAS_END},
     {LEX_HEXADECIMAL,     TOK_HEXADECIMAL},
-    {LEX_BINARY_BLOB,     TOK_BINARY_BLOB},
     {LEX_REFERENCE_END,   TOK_REFERENCE_END},
     {LEX_ASSIGNMENT,      TOK_ASSIGNMENT},
     {LEX_NEGATE_BEGIN,    TOK_NEGATE_BEGIN},
@@ -105,171 +106,171 @@ std::map<char, TokenType> symbolMap {
 
 
 // Ensure consistency of scope.
-inline size_t getFileScopeOffset(size_t pos) {
+inline size_t get_file_scope_offset(size_t pos) {
     return pos + 1;
 }
 
 
 // Identifiers are contiguous blocks of alphanumeric characters starting with a
 // letter.
-size_t getIdentifier(
-    std::vector<Token>& tokensOut,
-    const std::string lineIn,
+size_t get_identifier(
+    std::vector<Token>& tokens_out,
+    const std::string line_in,
     size_t pos,
     const std::string filename,
-    const int lineNo
+    const int line_no
 ) {
     std::string identifier;
     auto init_pos = pos;
-    while (pos < lineIn.size() && isalnum(lineIn[pos])) {
-        identifier += lineIn[pos];
+    while (pos < line_in.size() && isalnum(line_in[pos])) {
+        identifier += line_in[pos];
         pos++;
     }
     auto token = Token(TOK_IDENTIFIER, identifier);
-    token.setDebugInfo(filename, lineNo, init_pos);
-    tokensOut.push_back(token);
+    token.set_debug_info(filename, line_no, init_pos);
+    tokens_out.push_back(token);
     return pos;
 }
 
 
 // Numbers are digits that may contain a single decimal point.
-size_t getNumber(
-    std::vector<Token>& tokensOut,
-    const std::string lineIn,
+size_t get_number(
+    std::vector<Token>& tokens_out,
+    const std::string line_in,
     size_t pos,
     const std::string filename,
-    const int lineNo
+    const int line_no
 ) {
     std::string number;
-    bool decimalSeen = false;
+    bool decimal_seen = false;
     size_t init_pos = pos;
 
     // Build the number up.
-    while (pos < lineIn.size() && (isdigit(lineIn[pos]) || lineIn[pos] == LEX_DECIMAL_POINT)) {
-        if (lineIn[pos] == LEX_DECIMAL_POINT) {
+    while (pos < line_in.size() && (isdigit(line_in[pos]) || line_in[pos] == LEX_DECIMAL_POINT)) {
+        if (line_in[pos] == LEX_DECIMAL_POINT) {
             // Oops. malformed number!
-            if (decimalSeen) {
+            if (decimal_seen) {
                 throw std::domain_error("Extraneous decimal point");
             } else {
-                decimalSeen = true;
+                decimal_seen = true;
             }
             number += ".";
         } else {
-            number += lineIn[pos];
+            number += line_in[pos];
         }
         pos++;
     }
 
     // Create the correct type of token.
-    if (decimalSeen) {
+    if (decimal_seen) {
         auto token = Token(std::stod(number));
-        token.setDebugInfo(filename, lineNo, init_pos);
-        tokensOut.push_back(token);
+        token.set_debug_info(filename, line_no, init_pos);
+        tokens_out.push_back(token);
     } else {
         auto token = Token(std::stol(number));
-        token.setDebugInfo(filename, lineNo, init_pos);
-        tokensOut.push_back(token);
+        token.set_debug_info(filename, line_no, init_pos);
+        tokens_out.push_back(token);
     }
     return pos;
 }
 
 
-size_t getString(
-    std::vector<Token>& tokensOut,
-    const std::string lineIn,
+size_t get_string(
+    std::vector<Token>& tokens_out,
+    const std::string line_in,
     size_t pos,
     const std::string filename,
-    const int lineNo
+    const int line_no
 ) {
     std::string str;
-    char delimiter = lineIn[pos];
-    bool inString = true;
+    char delimiter = line_in[pos];
+    bool in_string = true;
     size_t init_pos = pos;
     pos++;
     
-    while (pos < lineIn.size() && inString) {
-        if (lineIn[pos] == delimiter) {
+    while (pos < line_in.size() && in_string) {
+        if (line_in[pos] == delimiter) {
             // Need to check next char is not a continuation.
             pos++;
-            if (pos < lineIn.size() && (lineIn[pos] == LEX_STRING_1 || lineIn[pos] == LEX_STRING_2)) {
-                delimiter = lineIn[pos];
+            if (pos < line_in.size() && (line_in[pos] == LEX_STRING_1 || line_in[pos] == LEX_STRING_2)) {
+                delimiter = line_in[pos];
                 pos++;
             } else {
-                inString = false;
+                in_string = false;
             }
         } else {
-            str += lineIn[pos];
+            str += line_in[pos];
             pos++;
         }
     }
     
     auto token = Token(TOK_STRING, str);
-    token.setDebugInfo(filename, lineNo, init_pos);
-    tokensOut.push_back(token);
+    token.set_debug_info(filename, line_no, init_pos);
+    tokens_out.push_back(token);
     return pos;
 }
 
 
-size_t getSymbol(
-    std::vector<Token>& tokensOut,
-    const std::string lineIn,
+size_t get_symbol(
+    std::vector<Token>& tokens_out,
+    const std::string line_in,
     size_t pos,
     const std::string filename,
-    const int lineNo
+    const int line_no
 ) {
-    std::string local = lineIn.substr(pos);
+    std::string local = line_in.substr(pos);
 
     // Context-dependent lexes first. Note that the context-dependent lexes will
     // also trigger at the start of an alias.
-    bool inContext = (
+    bool in_context = (
         pos > 0
-     && lineIn[pos - 1] != LEX_SPACE
-     && lineIn[pos - 1] != LEX_ALIAS_BEGIN
+     && line_in[pos - 1] != LEX_SPACE
+     && line_in[pos - 1] != LEX_ALIAS_BEGIN
     );
-    if (lineIn[pos] == LEX_COUNT) {
-        auto token = Token(inContext ? TOK_COUNT : TOK_SELF_COUNT);
-        token.setDebugInfo(filename, lineNo, pos);
-        tokensOut.push_back(token);
+    if (line_in[pos] == LEX_COUNT) {
+        auto token = Token(in_context ? TOK_COUNT : TOK_SELF_COUNT);
+        token.set_debug_info(filename, line_no, pos);
+        tokens_out.push_back(token);
         return ++pos;
 
-    } else if (lineIn[pos] == LEX_DOT) {
-        auto token = Token(inContext ? TOK_DOT : TOK_SELF_DOT);
-        token.setDebugInfo(filename, lineNo, pos);
-        tokensOut.push_back(token);
+    } else if (line_in[pos] == LEX_DOT) {
+        auto token = Token(in_context ? TOK_DOT : TOK_SELF_DOT);
+        token.set_debug_info(filename, line_no, pos);
+        tokens_out.push_back(token);
         return ++pos;
 
     } else if (local.rfind(LEX_VARARGS_CONTENTS, 0) == 0) {
         // Note that self-contents will be corrected to vararg during semantic
         // analysis if appropriate.
-        auto token = Token(inContext ? TOK_CONTENTS : TOK_SELF_CONTENTS);
-        token.setDebugInfo(filename, lineNo, pos);
-        tokensOut.push_back(token);
+        auto token = Token(in_context ? TOK_CONTENTS : TOK_SELF_CONTENTS);
+        token.set_debug_info(filename, line_no, pos);
+        tokens_out.push_back(token);
         return pos + 2;
 
-    } else if (lineIn[pos] == LEX_REFERENCE_BEGIN) {
-        auto token = Token(inContext ? TOK_REFERENCE_BEGIN : TOK_SELF_REFERENCE);
-        token.setDebugInfo(filename, lineNo, pos);
-        tokensOut.push_back(token);
+    } else if (line_in[pos] == LEX_REFERENCE_BEGIN) {
+        auto token = Token(in_context ? TOK_REFERENCE_BEGIN : TOK_SELF_REFERENCE);
+        token.set_debug_info(filename, line_no, pos);
+        tokens_out.push_back(token);
         return ++pos;
 
     }
 
     // Digraphs second
-    for (auto& d : digraphMap) {
+    for (auto& d : digraph_map) {
         if (local.rfind(d.first, 0) == 0) {
             auto token = Token(d.second);
-            token.setDebugInfo(filename, lineNo, pos);
-            tokensOut.push_back(token);
+            token.set_debug_info(filename, line_no, pos);
+            tokens_out.push_back(token);
             return pos + 2;
         }
     }
     
     // Other symbols
-    for (auto& s: symbolMap) {
-        if (lineIn[pos] == s.first) {
+    for (auto& s: symbol_map) {
+        if (line_in[pos] == s.first) {
             auto token = Token(s.second);
-            token.setDebugInfo(filename, lineNo, pos);
-            tokensOut.push_back(token);
+            token.set_debug_info(filename, line_no, pos);
+            tokens_out.push_back(token);
             return ++pos;
         }
     }
@@ -279,96 +280,85 @@ size_t getSymbol(
 }
 
 
-void tokenizeLine(
-    std::vector<Token>& tokensOut,
-    const std::string lineIn,
+void tokenize_line(
+    std::vector<Token>& tokens_out,
+    const std::string line_in,
     const std::string filename,
-    const int lineNo
+    const int line_no
 ) {
-    if (!lineIn.empty()) {
+    if (!line_in.empty()) {
         size_t pos = 0;
 
         // Check scope. File scope is 0, global is -1.
-        while (pos < lineIn.size() && lineIn[pos] == LEX_SPACE) {
+        while (pos < line_in.size() && line_in[pos] == LEX_SPACE) {
             pos++;
         }
-        int init_pos = getFileScopeOffset(pos);
-        auto token = Token(TOK_SCOPE_DOWN, std::string(), init_pos, 0.0);
-        token.setDebugInfo(filename, lineNo, pos);
-        tokensOut.push_back(token);
+        int init_pos = get_file_scope_offset(pos);
+        auto token = Token(TOK_SCOPE, std::string(), init_pos, 0.0);
+        token.set_debug_info(filename, line_no, pos);
+        tokens_out.push_back(token);
         
         try {
-            while (pos < lineIn.size()) {
+            while (pos < line_in.size()) {
                 // Check for comment
-                if (lineIn[pos] == LEX_COMMENT) {
-                    auto token = Token(TOK_COMMENT, lineIn.substr(pos + 1));
-                    token.setDebugInfo(filename, lineNo, pos);
-                    tokensOut.push_back(token);
+                if (line_in[pos] == LEX_COMMENT) {
+                    auto token = Token(TOK_COMMENT, line_in.substr(pos + 1));
+                    token.set_debug_info(filename, line_no, pos);
+                    tokens_out.push_back(token);
                     break;
                 }
 
                 // Check for identifiers
-                if (isalpha(lineIn[pos])) {
-                    pos = getIdentifier(tokensOut, lineIn, pos, filename, lineNo);
+                if (isalpha(line_in[pos])) {
+                    pos = get_identifier(tokens_out, line_in, pos, filename, line_no);
 
                 // Check for numbers
-                } else if (isdigit(lineIn[pos]) || lineIn[pos] == LEX_DECIMAL_POINT) {
-                    pos = getNumber(tokensOut, lineIn, pos, filename, lineNo);
+                } else if (isdigit(line_in[pos]) || line_in[pos] == LEX_DECIMAL_POINT) {
+                    pos = get_number(tokens_out, line_in, pos, filename, line_no);
 
                 // Check for strings
-                } else if (lineIn[pos] == LEX_STRING_1 || lineIn[pos] == LEX_STRING_2) {
-                    pos = getString(tokensOut, lineIn, pos, filename, lineNo);
+                } else if (line_in[pos] == LEX_STRING_1 || line_in[pos] == LEX_STRING_2) {
+                    pos = get_string(tokens_out, line_in, pos, filename, line_no);
 
                 // Skips spaces
-                } else if (lineIn[pos] == LEX_SPACE) {
+                } else if (line_in[pos] == LEX_SPACE) {
                     pos++;
 
                 // Check for implemented symbols.                    
                 } else {
-                    pos = getSymbol(tokensOut, lineIn, pos, filename, lineNo);
+                    pos = get_symbol(tokens_out, line_in, pos, filename, line_no);
                     
                 }
             }
         } catch (const std::domain_error& de) {
             throw std::domain_error(std::to_string(pos) + ": " + de.what());
         }
-
-        // Calculate the next immediate scope (may not be used, Parser will sort
-        // it out.
-        token = Token(TOK_SCOPE_DOWN, std::string(), init_pos + 1, 0.0);
-        token.setDebugInfo(filename, lineNo, lineIn.size());
-        tokensOut.push_back(token);
     }
 }
 
 
-bool tokenizeStream(
-    std::vector<Token>& tokensOut,
-    std::istream& streamIn,
+bool tokenize_stream(
+    std::vector<Token>& tokens_out,
+    std::istream& stream_in,
     const std::string filename
 ) {
     bool success = true;
-    int lineNo = 1;
+    int line_no = 1;
 
     // Enter file scope
-    auto token = Token(TOK_SCOPE_DOWN, filename);
-    token.setDebugInfo(filename, 0, 0);
-    tokensOut.push_back(token);
+    auto token = Token(TOK_SCOPE, filename);
+    token.set_debug_info(filename, 0, 0);
+    tokens_out.push_back(token);
     
-    for (std::string line; std::getline(streamIn, line); ) {
+    for (std::string line; std::getline(stream_in, line); ) {
         try {
-            tokenizeLine(tokensOut, line, filename, lineNo);
+            tokenize_line(tokens_out, line, filename, line_no);
         } catch (std::domain_error& de) {
-            std::cerr << "LEXER: " << filename << "@" << lineNo << ": " << de.what() << std::endl;
+            std::cerr << "LEXER: " << filename << "@" << line_no << ": " << de.what() << std::endl;
             success = false;
         }
-        lineNo++;
+        line_no++;
     }
-
-    // Exit file scope
-    token = Token(TOK_SCOPE_UP, std::string(), -1, 0.0);
-    token.setDebugInfo(filename, lineNo, 0);
-    tokensOut.push_back(token);
     
     return success;
 }
@@ -376,9 +366,9 @@ bool tokenizeStream(
 
 std::ostream& operator<<(std::ostream& o, const Token& t) {
     o << std::string(t.pos, ' ');
-    o << "[" << t.type << ",\"" << t.sVal << "\"," << t.lVal << "," << t.dVal << "]";
+    o << "[" << t.type << ",\"" << t.s_val << "\"," << t.l_val << "," << t.d_val << "]";
 #ifdef DEBUG
-    o << "(" << t.filename << ":" << t.lineNo << "@" << t.pos << ")";
+    o << "(" << t.filename << ":" << t.line_no << "@" << t.pos << ")";
 #endif
     return o;
 }

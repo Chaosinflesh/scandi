@@ -1,6 +1,9 @@
+// Scandi: parser.cpp
+//
 // Author: Neil Bradley
 // Copyright: Neil Bradley
 // License: GPL 3.0
+
 #include <iostream>
 #include <iterator>
 #include <vector>
@@ -8,7 +11,10 @@
 #include "lexer.h"
 #include "parser.h"
 
+#define TOKEN_IT std::vector<Token::iterator
+#define AST_PTR std::shared_ptr<ScopeAST>
 
+/*
 // Forward declarations
 std::shared_ptr<CitizenAST> parseStack(std::vector<Token> stack, std::shared_ptr<CitizenAST> parent, int depth);
 
@@ -295,37 +301,34 @@ std::shared_ptr<CitizenAST> parseStack(std::vector<Token> stack, std::shared_ptr
     
     return parseExpression(stack, parent, depth, false);
 }
+*/
 
-
-bool parseToAST(std::vector<Token> tokens, std::shared_ptr<CitizenAST> ast) {
+bool parse_to_ast(std::vector<Token> tokens, AST_PTR ast) {
     bool success = true;
-    auto currentToken = tokens.begin();
-    auto lastToken = tokens.end();
-    while (currentToken != lastToken) {
-        // 1. Calculate depth and parent.
-        int depth = ast.get()->depth;
-        while (currentToken != lastToken && currentToken->type == TOK_SCOPE) {
-            depth = (int)currentToken->lVal;
-            currentToken++;
-        }
-        if (currentToken == lastToken) {
-            break;
-        }
-        while (depth <= ast.get()->depth) {
-            if (ast.get()->scope) {
-                ast = ast.get()->scope;
-            } else {
-                throw std::range_error("PARSER attempted to access a null object. This is a bug.");
-            }
-        }
+    auto token = tokens.begin();
+    auto last_token = tokens.end();
+    
+    while (token != last_token) {
         
-        // 2. Parse the stack
-        std::vector<Token> stack;
-        while (currentToken != lastToken && currentToken->type != TOK_SCOPE) {
-            stack.push_back(*currentToken);
-            currentToken++;
+        switch (token->type) {
+            // Scope
+            case TOK_SCOPE:
+                {auto a = std::make_shared<ScopeAST>(ScopeAST(
+                    "scope" + std::to_string(token->line_no),
+                    AST_SCOPE,
+                    token->l_val,
+                    ast->get_is_static()
+                ));
+                ast = ScopeAST::add_member(ast, a);}
+                break;
+
+            // Not yet implemented.
+            default:
+                std::cerr << "Not yet processing token " << token->type << std::endl;
+                break;
         }
-        ast = parseStack(stack, ast, depth);
+        token++;
     }
+
     return success;
 }

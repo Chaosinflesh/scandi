@@ -11,11 +11,8 @@
 
 
 enum TokenType {
-    TOK_SCOPE_DOWN        =  48,  // Spaces at the start of a line.  Also line
+    TOK_SCOPE             =  48,  // Spaces at the start of a line.  Also line
                                   //   scope + 1 at the end of a line.
-    TOK_SCOPE_UP          =  49,  // Calculated when the scope drops, as
-                                  //   determined by the scope of the next
-                                  //   non-empty line, or end of file.
     TOK_COMMENT           =  50,  // ` to end of line
 
     TOK_LABEL_DECL        =  64,  // \.
@@ -32,7 +29,6 @@ enum TokenType {
     TOK_NUMBER_DOUBLE     =  98,  // All numbers containing ','
     TOK_NUMBER_LONG       =  99,  // All numbers that are NOT double
     TOK_STRING            = 100,  // Contiguous blocks delimited by ' or "
-    TOK_BINARY_BLOB       = 101,  // __ - in hexadecimal
 
     TOK_NULL              = 112,  // ()
     TOK_VARARGS           = 113,  // [] in function declaration context
@@ -78,71 +74,71 @@ class Token {
     public:
         // Lexer information
         TokenType type;
-        std::string sVal;
-        int lVal;
-        double dVal;
+        std::string s_val;
+        int l_val;
+        double d_val;
         
         // Debug information
         std::string filename;
-        int lineNo;
+        int line_no;
         size_t pos;
     
         Token(
             TokenType type,
-            std::string sVal,
-            long lVal,
-            double dVal
+            std::string s_val,
+            long l_val,
+            double d_val
         ) :
             type(type),
-            sVal(sVal),
-            lVal(lVal),
-            dVal(dVal)
+            s_val(s_val),
+            l_val(l_val),
+            d_val(d_val)
         {}
 
         // Value-less token.        
         Token(TokenType type) :
             type(type),
-            sVal(std::string()),
-            lVal(0L),
-            dVal(0.0)
+            s_val(std::string()),
+            l_val(0L),
+            d_val(0.0)
         {}
 
         // String-type token.
-        Token(TokenType type, std::string sVal) :
+        Token(TokenType type, std::string s_val) :
             type(type),
-            sVal(sVal),
-            lVal(0L),
-            dVal(0.0)
+            s_val(s_val),
+            l_val(0L),
+            d_val(0.0)
         {}
 
         // Long-type token
-        Token(long lVal) :
+        Token(long l_val) :
             type(TOK_NUMBER_LONG),
-            sVal(std::string()),
-            lVal(lVal),
-            dVal(0.0)
+            s_val(std::string()),
+            l_val(l_val),
+            d_val(0.0)
         {}
 
         // Double-type token
-        Token(double dVal) :
+        Token(double d_val) :
             type(TOK_NUMBER_DOUBLE),
-            sVal(std::string()),
-            lVal(0L),
-            dVal(dVal)
+            s_val(std::string()),
+            l_val(0L),
+            d_val(d_val)
         {}
 
         // Inject debug information in.
-        inline void setDebugInfo(std::string filename, int lineNo, size_t pos) {
+        inline void set_debug_info(std::string filename, int line_no, size_t pos) {
             this->filename = filename;
-            this->lineNo = lineNo;
+            this->line_no = line_no;
             this->pos = pos;
         }
 };
 std::ostream& operator<<(std::ostream& outStream, const Token& token);
 
 
-bool tokenizeStream(
-    std::vector<Token>& tokensOut,
-    std::istream& streamIn,
+bool tokenize_stream(
+    std::vector<Token>& tokens_out,
+    std::istream& stream_in,
     const std::string filename
 );

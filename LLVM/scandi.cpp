@@ -1,17 +1,20 @@
+// Scandi: scandi.cpp
+//
 // Author: Neil Bradley
 // Copyright: Neil Bradley
 // License: GPL 3.0
+
 #include <iostream>
 #include <string>
-//#include "ast.h"
+#include "ast.h"
 #include "lexer.h"
-//#include "parser.h"
+#include "parser.h"
 
 
 int main(int argc, char** argv) {
     std::vector<Token> tokens;
     // 1. Tokenize
-    if (!tokenizeStream(tokens, std::cin, "stdin")) {
+    if (!tokenize_stream(tokens, std::cin, "stdin")) {
         std::cerr << "LEXING FAILED" << std::endl;
         return 1;
     }
@@ -22,20 +25,17 @@ int main(int argc, char** argv) {
     }
 #endif
 
-/*
     // 2. Parse
-    auto global = std::make_shared<CitizenAST>(CitizenAST(-1, true, std::shared_ptr<CitizenAST>(nullptr)));
-    auto ast = std::make_shared<DeclaredCitizenAST>(DeclaredCitizenAST("file_level", TOK_DECLARATION_VARIABLE, 0, true, global));
-    global->members.push_back(ast);
-    if (!parseToAST(tokens, ast)) {
+    auto global = std::make_shared<ScopeAST>(ScopeAST("global", AST_SCOPE, -1, true));
+    auto file = std::make_shared<ScopeAST>(ScopeAST("file", AST_SCOPE, 0, true));
+    auto ast = ScopeAST::add_member(global, file);
+    if (!parse_to_ast(tokens, ast)) {
         std::cerr << "PARSING FAILED" << std::endl;
     }
 //#ifdef DEBUG
     std::cout << *global << std::endl;
 //#endif
-
     // 3. Semantic analysis
     //    TODO: Add in stdlib here
     return 0;
-*/
 }

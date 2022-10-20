@@ -24,10 +24,10 @@
 | \\\<ID\> | *Label* <br> \<ID\> is a jump target. |
 | ($ or $$)\<ID\> | *Variable* or *Static Variable* <br> \<ID\> is a variable. Static variables persist value between invocations, and are available globally via namespace. |
 | (@ or @@)\<ID\> | *Function* or *Static Function* <br> \<ID\> is a function. All variable declarations on the stack prior are function variables. Static functions may only interact with provided function arguments or static variables. |
-| \_ | *Address operator* <br> If preceeded by an IDENTIFIER, gets the memory address of the IDENTIFIER. If preceeded by a LONG, is a memory address. Addresses can be written to and read from, and the \[ operator may also be used. |
+| \_ | *Address operator* <br> If preceeded by a DOT operator, gets the memory address of the \<ID\>. If preceeded by a LONG value (either hard-coded or in a variable), is a memory address. Addresses can be written to and read from, and the \[ operator may also be used. |
 | \{ and \} | *Alias operators* <br> An identifier preceeding a closing } may be used to reference the stack back to {. This can be used to reference libraries via aliasing, or create lambdas. |
 | \(\) | *NULL* <br> Signifies no value. |
-| \# | *Interpret as Hexadecimal* <br> Preceeding value is in hexadecimal. When applied to a string, the string becomes a binary blob. |
+| \#<value> | *Interpret as Hexadecimal* <br> This value is in hexadecimal. When applied to a string, the string becomes a binary blob. |
 | ( and ) | *Negate* <br> Negates the final result of the expression between the braces. |
 
 
