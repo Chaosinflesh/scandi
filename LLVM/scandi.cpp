@@ -6,9 +6,9 @@
 
 #include <iostream>
 #include <string>
-#include "ast.h"
+//#include "ast.h"
 #include "lexer.h"
-#include "parser.h"
+//#include "parser.h"
 
 
 int main(int argc, char** argv) {
@@ -24,7 +24,7 @@ int main(int argc, char** argv) {
         std::cout << t << std::endl;
     }
 #endif
-
+/*
     // 2. Parse
     auto global = std::make_shared<ScopeAST>(ScopeAST("global", -1, true));
     if (!parse_to_ast(tokens, global)) {
@@ -33,6 +33,7 @@ int main(int argc, char** argv) {
 //#ifdef DEBUG
     std::cout << *global << std::endl;
 //#endif
+*/
     // 3. Semantic analysis
     //    TODO: Add in stdlib here
     return 0;
