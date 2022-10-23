@@ -1,0 +1,4 @@
+` Tests a little bit more
+{stream.writeline writeline}
+{system.out out}
+"Hello, Scandi!" out writeline

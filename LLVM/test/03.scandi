@@ -1,0 +1,10 @@
+` Tests a little bit more again
+{stream.writeline writeline}
+{system.out out}
+
+$hello "Hello, Scandi!" =
+
+$line @function
+    $line out writeline
+
+function

@@ -11,4 +11,7 @@
 #include "lexer.h"
 
 
-bool parse_to_ast(std::vector<Token>, std::shared_ptr<ScopeAST>);
+#define AST_PTR std::shared_ptr<ScopeAST>
+
+
+AST_PTR parse_to_ast(std::vector<Token>, std::shared_ptr<ScopeAST>);

@@ -372,3 +372,8 @@ std::ostream& operator<<(std::ostream& o, const Token& t) {
 #endif
     return o;
 }
+
+
+bool is_token_conditional(TokenType tt) {
+    return tt >= 176 && tt <= 180;
+}

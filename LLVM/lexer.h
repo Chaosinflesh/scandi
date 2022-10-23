@@ -142,3 +142,6 @@ bool tokenize_stream(
     std::istream& stream_in,
     const std::string filename
 );
+
+
+bool is_token_conditional(TokenType);

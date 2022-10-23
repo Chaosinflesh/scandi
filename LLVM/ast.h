@@ -16,13 +16,16 @@
 enum ASTType {
     AST_SCOPE,
 
-    // Structures
+    // Structural
     AST_LABEL,
     AST_VARIABLE,
     AST_FUNCTION,
     AST_ALIAS,
+    AST_EXPRESSION,
+    AST_CONDITIONAL,
 
     // Types
+    AST_IDENTIFIER,
     AST_LONG,
     AST_DOUBLE,
     AST_STRING,
@@ -31,7 +34,6 @@ enum ASTType {
     AST_VARARGS,
 
     // Operators
-    AST_JUMP,               // An unconditional jump.
     AST_ADDRESS,
     AST_DOT,
     AST_CONTENTS,
@@ -83,9 +85,10 @@ class ScopeAST {
         // belongs to.
         static std::shared_ptr<ScopeAST> add_member(
             std::shared_ptr<ScopeAST>,
-            std::shared_ptr<ScopeAST>
+            std::shared_ptr<ScopeAST>,
+            bool
         );
-        
+
         friend std::ostream& operator<<(std::ostream&, const ScopeAST&);
 };
 std::ostream& operator<<(std::ostream&, const ScopeAST&);
@@ -99,10 +102,9 @@ class LabelAST : public ScopeAST {
     public:
         LabelAST(
             std::string name,
-            int depth,
-            bool is_static
+            int depth
         ) :
-            ScopeAST(name, depth, is_static)
+            ScopeAST(name, depth, false)
         {
             type = AST_LABEL;
         }
@@ -138,17 +140,97 @@ std::ostream& operator<<(std::ostream&, const VariableAST&);
  ******************************************************************************/
 class FunctionAST : public ScopeAST {
 
+    protected:
+        bool takes_varargs;
+        std::vector<std::string> parameters_by_order;
+        std::map<std::string, std::shared_ptr<VariableAST>> parameters_by_name;
+
     public:
         FunctionAST(
             std::string name,
             int depth,
-            bool is_static
+            bool is_static,
+            bool takes_varargs
         ) :
-            ScopeAST(name, depth, is_static)
+            ScopeAST(name, depth, is_static),
+            takes_varargs(takes_varargs)
         {
             type = AST_FUNCTION;
         }
 
+        void add_parameter(std::string);
+
         friend std::ostream& operator<<(std::ostream&, const FunctionAST&);
 };
 std::ostream& operator<<(std::ostream&, const FunctionAST&);
+
+
+/******************************************************************************
+ *                             ExpressionAST                                  *
+ ******************************************************************************/
+class ExpressionAST : public ScopeAST {
+
+    public:
+        ExpressionAST(
+            int depth
+        ) :
+            ScopeAST("", depth, false)
+        {
+            type = AST_EXPRESSION;
+        }
+
+        friend std::ostream& operator<<(std::ostream&, const ExpressionAST&);
+};
+std::ostream& operator<<(std::ostream&, const ExpressionAST&);
+
+
+/******************************************************************************
+ *                                AliasAST                                    *
+ ******************************************************************************/
+class AliasAST : public ScopeAST {
+
+    protected:
+        std::shared_ptr<ExpressionAST> expression;
+
+    public:
+        AliasAST(
+            std::string name,
+            int depth
+        ) :
+            ScopeAST(name, depth, true)
+        {
+            type = AST_ALIAS;
+        }
+
+        void add_expression(std::shared_ptr<ExpressionAST>);
+        std::shared_ptr<ExpressionAST> get_expression();
+
+        friend std::ostream& operator<<(std::ostream&, const AliasAST&);
+};
+std::ostream& operator<<(std::ostream&, const AliasAST&);
+
+
+/******************************************************************************
+ *                            ConditionalAST                                  *
+ ******************************************************************************/
+class ConditionalAST : public AliasAST {
+
+    protected:
+        std::shared_ptr<ScopeAST> when_true;
+        std::shared_ptr<ScopeAST> when_false;
+
+    public:
+        ConditionalAST(
+            int depth
+        ) :
+            AliasAST("", depth)
+        {
+            type = AST_CONDITIONAL;
+        }
+
+        void set_target(bool, std::shared_ptr<ScopeAST>);
+        std::shared_ptr<ScopeAST> get_target(bool);
+
+        friend std::ostream& operator<<(std::ostream&, const ConditionalAST&);
+};
+std::ostream& operator<<(std::ostream&, const ConditionalAST&);
