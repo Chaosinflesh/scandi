@@ -23,11 +23,76 @@ EXP_PTR parse_expression(TOKEN_IT token, TOKEN_IT end, int depth) {
         std::cerr << " " << b->type;
     }
 #endif
-    auto ex = std::make_shared<ExpressionAST>(depth);
-    
-    // TODO: Add sub-expressions here!
-    
-    return ex;
+    std::shared_ptr<ExpressionAST> base = nullptr, current = nullptr, temp;
+
+    while (token != end) {
+        temp = nullptr;
+        switch (token->type) {
+            case TOK_IDENTIFIER:    temp = std::make_shared<IdentifierAST>(token->s_val, depth); break;
+            case TOK_STRING:        temp = std::make_shared<    StringAST>(token->s_val, depth); break;
+            case TOK_NUMBER_LONG:   temp = std::make_shared<      LongAST>(token->l_val, depth); break;
+            case TOK_NEGATE_BEGIN:  temp = std::make_shared<      LongAST>(           0, depth); break;
+            case TOK_NUMBER_DOUBLE: temp = std::make_shared<    DoubleAST>(token->d_val, depth); break;
+            case TOK_NULL:          temp = std::make_shared<      NullAST>(              depth); break;
+            case TOK_ADDRESS:       temp = std::make_shared<  OperatorAST>("_",   false, depth); break;
+            case TOK_DOT:           temp = std::make_shared<  OperatorAST>(".",   false, depth); break;
+            case TOK_SELF_DOT:      temp = std::make_shared<  OperatorAST>(".",    true, depth); break;
+            case TOK_COUNT:         temp = std::make_shared<  OperatorAST>("!",   false, depth); break;
+            case TOK_SELF_COUNT:    temp = std::make_shared<  OperatorAST>("!",    true, depth); break;
+            case TOK_CONTENTS:      temp = std::make_shared<  OperatorAST>("[]",  false, depth); break;
+            case TOK_SELF_CONTENTS: temp = std::make_shared<  OperatorAST>("[]",   true, depth); break;
+            case TOK_COMPLEMENT:    temp = std::make_shared<  OperatorAST>("~",   false, depth); break;
+            case TOK_ASSIGNMENT:    temp = std::make_shared<  OperatorAST>("=",   false, depth); break;
+            case TOK_ADD:           temp = std::make_shared<  OperatorAST>("+",   false, depth); break;
+            case TOK_SUB:           temp = std::make_shared<  OperatorAST>("-",   false, depth); break;
+            case TOK_NEGATE_END:    temp = std::make_shared<  OperatorAST>("-",   false, depth); break;
+            case TOK_MULTIPLY:      temp = std::make_shared<  OperatorAST>("*",   false, depth); break;
+            case TOK_DIVIDE:        temp = std::make_shared<  OperatorAST>("/",   false, depth); break;
+            case TOK_MODULUS:       temp = std::make_shared<  OperatorAST>("%",   false, depth); break;
+            case TOK_AND:           temp = std::make_shared<  OperatorAST>("&",   false, depth); break;
+            case TOK_OR:            temp = std::make_shared<  OperatorAST>("|",   false, depth); break;
+            case TOK_XOR:           temp = std::make_shared<  OperatorAST>("^",   false, depth); break;
+            case TOK_SHL:           temp = std::make_shared<  OperatorAST>("<-",  false, depth); break;
+            case TOK_SHR:           temp = std::make_shared<  OperatorAST>("->",  false, depth); break;
+            case TOK_SSHR:          temp = std::make_shared<  OperatorAST>(">>",  false, depth); break;
+            case TOK_EQ:            temp = std::make_shared<  OperatorAST>("?",   false, depth); break;
+            case TOK_LT:            temp = std::make_shared<  OperatorAST>("<",   false, depth); break;
+            case TOK_LTE:           temp = std::make_shared<  OperatorAST>("?<",  false, depth); break;
+            case TOK_GT:            temp = std::make_shared<  OperatorAST>(">",   false, depth); break;
+            case TOK_GTE:           temp = std::make_shared<  OperatorAST>("?>",  false, depth); break;
+            case TOK_REFERENCE_BEGIN: 
+            case TOK_SELF_REFERENCE: {
+                    auto temp2 = std::make_shared<ReferenceAST>(token->type == TOK_SELF_REFERENCE, depth);
+                    TOKEN_IT stop = end;
+                    while (stop > token && stop->type != TOK_REFERENCE_END) {
+                        stop--;
+                    }
+                    if (stop - token < 2) {
+                        throw std::domain_error("Malformed reference.");
+                    }
+                    auto ref_ex = parse_expression(token + 1, stop, depth);
+                    temp2->add_expression(ref_ex);
+                    temp = temp2;
+                    token = stop;
+                    break;
+                }
+            default:
+                throw std::domain_error("Unknown expression token: " + std::to_string(token->type) + " - this is a bug");
+        }
+        if (temp) {
+            if (current) {
+                current->set_next(temp);
+                current = temp;
+            } else {
+                base = temp;
+                current = temp;
+                depth = -1;
+            }
+        }
+        token++;
+    }
+
+    return base;
 }
 
 
@@ -36,7 +101,18 @@ AST_PTR parse_conditional(TOKEN_IT token, TOKEN_IT end, AST_PTR ast) {
     if (end - token < 3) {
         throw std::domain_error("Empty conditional");
     }
-    auto c = std::make_shared<ConditionalAST>(ConditionalAST(token->l_val));
+    std::string condition;
+    switch ((end - 1)->type) {
+        case TOK_EQ: condition = "?"; break;
+        case TOK_LT: condition = "<"; break;
+        case TOK_LTE: condition = "?<"; break;
+        case TOK_GT: condition = ">"; break;
+        case TOK_GTE: condition = "?>"; break;
+        default:
+            throw std::domain_error("Invalid condition detected " + std::to_string((end - 1)->type) + " this is a bug");
+    }
+    
+    auto c = std::make_shared<ConditionalAST>(condition, token->l_val);
     auto ex = parse_expression(token + 1, end - 1, token->l_val + 8);
     c->add_expression(ex);
     return ScopeAST::add_member(ast, c, false);
@@ -105,7 +181,7 @@ AST_PTR parse_variable(TOKEN_IT token, TOKEN_IT end, AST_PTR ast) {
 
     // Check for assignment
     if (end - token >= 5 && (end - 1)->type == TOK_ASSIGNMENT) {
-        auto ex = parse_expression(token + 2, end, token->l_val);
+        auto ex = parse_expression(token + 2, end, token->l_val + 8);
         ast = ScopeAST::add_member(ast, ex, false);
     }
     return ast;
@@ -162,7 +238,7 @@ AST_PTR parse_scope(TOKEN_IT token, TOKEN_IT end, AST_PTR ast) {
 
     } else if ((token + 1)->type == TOK_ELSE) {
         ast = parse_else(token, end, ast);
-    } else if (is_token_conditional((end -1)->type)) {
+    } else if (is_token_conditional((end -1 )->type)) {
         ast = parse_conditional(token, end, ast);
 
     } else if (end - token > 1) {
@@ -189,7 +265,7 @@ AST_PTR parse_to_ast(std::vector<Token> tokens, AST_PTR ast) {
         }
 
         if (token->type != TOK_SCOPE) {
-            std::cerr << "Not yet processing token " << token->type << std::endl;
+            throw std::domain_error("Not yet processing token " + std::to_string(token->type));
             token++;
             
         } else {
@@ -203,6 +279,9 @@ AST_PTR parse_to_ast(std::vector<Token> tokens, AST_PTR ast) {
             token = scope_end;
         }
     }
+#ifdef DEBUG
+    std::cerr << std::endl;
+#endif
 
     return ast;
 }

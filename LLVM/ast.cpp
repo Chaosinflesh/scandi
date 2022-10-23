@@ -74,9 +74,15 @@ std::ostream& operator<<(std::ostream& os, const ScopeAST& ast) {
         case AST_LABEL: os << dynamic_cast<const LabelAST&>(ast); break;
         case AST_VARIABLE: os << dynamic_cast<const VariableAST&>(ast); break;
         case AST_FUNCTION: os << dynamic_cast<const FunctionAST&>(ast); break;
-        case AST_EXPRESSION: os << dynamic_cast<const ExpressionAST&>(ast); break;
         case AST_ALIAS: os << dynamic_cast<const AliasAST&>(ast); break;
         case AST_CONDITIONAL: os << dynamic_cast<const ConditionalAST&>(ast); break;
+        case AST_EXPRESSION: os << dynamic_cast<const ExpressionAST&>(ast); break;
+        case AST_IDENTIFIER: os << dynamic_cast<const ExpressionAST&>(ast); break;
+        case AST_STRING: os << dynamic_cast<const ExpressionAST&>(ast); break;
+        case AST_LONG: os << dynamic_cast<const ExpressionAST&>(ast); break;
+        case AST_DOUBLE: os << dynamic_cast<const ExpressionAST&>(ast); break;
+        case AST_NULL: os << dynamic_cast<const ExpressionAST&>(ast); break;
+        case AST_OPERATOR: os << dynamic_cast<const ExpressionAST&>(ast); break;
         default:
             // Don't print the global scope.
             if (ast.depth >= 0) {
@@ -135,9 +141,58 @@ void FunctionAST::add_parameter(std::string name) {
  *                             ExpressionAST                                  *
  ******************************************************************************/
 std::ostream& operator<<(std::ostream& os, const ExpressionAST& ex) {
-    os << std::endl << std::string(ex.depth, ' ') << "[ExpressionAST]";
-    // TODO: Display stack here.
+    if (ex.depth >= 0) {
+        os << std::endl << std::string(ex.depth, ' ');
+    }
+    switch (ex.type) {
+        case AST_IDENTIFIER: os << dynamic_cast<const IdentifierAST&>(ex); break;
+        case AST_STRING:     os << dynamic_cast<const     StringAST&>(ex); break;
+        case AST_LONG:       os << dynamic_cast<const       LongAST&>(ex); break;
+        case AST_DOUBLE:     os << dynamic_cast<const     DoubleAST&>(ex); break;
+        case AST_NULL:       os << dynamic_cast<const       NullAST&>(ex); break;
+        case AST_OPERATOR:   os << dynamic_cast<const   OperatorAST&>(ex); break;
+        case AST_REFERENCE:  os << dynamic_cast<const  ReferenceAST&>(ex); break;
+        default:
+            throw std::domain_error("This shouldn't have happened: " + std::to_string(ex.type));
+        break;
+    }
+    if (ex.next) {
+        os << *ex.next;
+    }
     return os;
+}
+
+
+void ExpressionAST::set_next(std::shared_ptr<ExpressionAST> next) {
+    this->next = next;
+}
+
+
+const std::shared_ptr<ExpressionAST> ExpressionAST::get_next() const {
+    return this->next;
+}
+
+
+/******************************************************************************
+ *                              ReferenceAST                                  *
+ ******************************************************************************/
+std::ostream& operator<<(std::ostream& os, const ReferenceAST& ref) {
+    os << "[ReferenceAST] -> [";
+    if (ref.expression) {
+        os << *ref.expression;
+    }
+    os << "] ";
+    return os;
+}
+
+
+void ReferenceAST::add_expression(std::shared_ptr<ExpressionAST> ex) {
+    this->expression = ex;
+}
+
+
+std::shared_ptr<ExpressionAST> ReferenceAST::get_expression() {
+    return this->expression;
 }
 
 
@@ -146,7 +201,9 @@ std::ostream& operator<<(std::ostream& os, const ExpressionAST& ex) {
  ******************************************************************************/
 std::ostream& operator<<(std::ostream& os, const AliasAST& alias) {
     os << std::endl << std::string(alias.depth, ' ') << alias.name << "[AliasAST] ->";
-    os << *alias.expression;
+    if (alias.expression) {
+        os << *alias.expression;
+    }
     return os;
 }
 
@@ -165,8 +222,10 @@ std::shared_ptr<ExpressionAST> AliasAST::get_expression() {
  *                            ConditionalAST                                  *
  ******************************************************************************/
 std::ostream& operator<<(std::ostream& os, const ConditionalAST& cond) {
-    os << std::endl << std::string(cond.depth, ' ') << "[ConditionalAST] ->";
-    os << *cond.expression;
+    os << std::endl << std::string(cond.depth, ' ') << "[ConditionalAST] -> " << cond.get_condition() << " ";
+    if (cond.expression) {
+        os << *cond.expression;
+    }
     if (cond.when_true) {
         os << *cond.when_true;
     }
@@ -174,6 +233,11 @@ std::ostream& operator<<(std::ostream& os, const ConditionalAST& cond) {
         os << *cond.when_false;
     }
     return os;
+}
+
+
+const std::string ConditionalAST::get_condition() const {
+    return this->condition;
 }
 
 
@@ -193,3 +257,79 @@ std::shared_ptr<ScopeAST> ConditionalAST::get_target(bool when_true) {
     }
 }
 
+
+/******************************************************************************
+ *                             IdentifierAST                                  *
+ ******************************************************************************/
+std::ostream& operator<<(std::ostream& os, const IdentifierAST& id) {
+    os << id.name << "[IdentifierAST] ";
+    if (id.get_target()) {
+        os << "-> " << id.get_target()->get_name();
+    }
+    return os;
+}
+
+
+void IdentifierAST::set_target(std::shared_ptr<ScopeAST> scope) {
+    this->target = scope;
+}
+
+
+const std::shared_ptr<ScopeAST> IdentifierAST::get_target() const {
+    return this->target;
+}
+
+
+/******************************************************************************
+ *                                StringAST                                   *
+ ******************************************************************************/
+std::ostream& operator<<(std::ostream& os, const StringAST& s) {
+    os << "\"" << s.value << "\" " ;
+    return os;
+}
+
+
+/******************************************************************************
+ *                                 LongAST                                    *
+ ******************************************************************************/
+std::ostream& operator<<(std::ostream& os, const LongAST& l) {
+    os <<  l.value << " ";
+    return os;
+}
+
+
+/******************************************************************************
+ *                                DoubleAST                                   *
+ ******************************************************************************/
+std::ostream& operator<<(std::ostream& os, const DoubleAST& d) {
+    os <<  d.value << " ";
+    return os;
+}
+
+
+/******************************************************************************
+ *                                 NullAST                                    *
+ ******************************************************************************/
+std::ostream& operator<<(std::ostream& os, const NullAST& n) {
+    os <<  "() ";
+    return os;
+}
+
+
+/******************************************************************************
+ *                              OperatorAST                                   *
+ ******************************************************************************/
+std::ostream& operator<<(std::ostream& os, const OperatorAST& o) {
+    os <<  (o.get_is_static() ? o.get_op() : "") << o.get_op() << " ";
+    return os;
+}
+
+
+const bool OperatorAST::get_is_self() const {
+    return this->is_static;
+}
+
+
+const std::string OperatorAST::get_op() const {
+    return this->op;
+}

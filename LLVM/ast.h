@@ -26,23 +26,15 @@ enum ASTType {
 
     // Types
     AST_IDENTIFIER,
+    AST_STRING,
     AST_LONG,
     AST_DOUBLE,
-    AST_STRING,
-    AST_BLOB,
     AST_NULL,
-    AST_VARARGS,
 
     // Operators
-    AST_ADDRESS,
-    AST_DOT,
-    AST_CONTENTS,
-    AST_COUNT,
-    AST_REFERENCE,          // This is a name for the label, variable and function LUT.
+    AST_REFERENCE,
 
-    AST_ASSIGNMENT,
-    AST_UNARY_OP,           
-    AST_BINARY_OP,          // All the arithmetic and logical operators.
+    AST_OPERATOR,           
     AST_CONDITIONAL_OP      // Contains 2 jump values, which is taken depends on previous stack value.
 };
 
@@ -57,7 +49,7 @@ class ScopeAST {
         ASTType type = AST_SCOPE;                                               // Used to determine which << operator to use.
         int depth;                                                              // This is useful for tree building.
         bool is_static;                                                         // This is useful for semantic checking.
-        std::shared_ptr<ScopeAST> parent_scope;                                 // It is necessary to know parent for semantic checking.
+        std::shared_ptr<ScopeAST> parent_scope = nullptr;                       // It is necessary to know parent for semantic checking.
         std::vector<std::shared_ptr<ScopeAST>> members_by_order;                // Execution happens in order here.
         std::map<std::string, std::shared_ptr<ScopeAST>> members_by_name;       // Used for building the reference connections.
         
@@ -170,6 +162,9 @@ std::ostream& operator<<(std::ostream&, const FunctionAST&);
  ******************************************************************************/
 class ExpressionAST : public ScopeAST {
 
+    protected:
+        std::shared_ptr<ExpressionAST> next = nullptr;
+
     public:
         ExpressionAST(
             int depth
@@ -178,6 +173,9 @@ class ExpressionAST : public ScopeAST {
         {
             type = AST_EXPRESSION;
         }
+
+        void set_next(std::shared_ptr<ExpressionAST>);
+        const std::shared_ptr<ExpressionAST> get_next() const;
 
         friend std::ostream& operator<<(std::ostream&, const ExpressionAST&);
 };
@@ -190,7 +188,7 @@ std::ostream& operator<<(std::ostream&, const ExpressionAST&);
 class AliasAST : public ScopeAST {
 
     protected:
-        std::shared_ptr<ExpressionAST> expression;
+        std::shared_ptr<ExpressionAST> expression = nullptr;
 
     public:
         AliasAST(
@@ -216,21 +214,200 @@ std::ostream& operator<<(std::ostream&, const AliasAST&);
 class ConditionalAST : public AliasAST {
 
     protected:
-        std::shared_ptr<ScopeAST> when_true;
-        std::shared_ptr<ScopeAST> when_false;
+        std::string condition;
+        std::shared_ptr<ScopeAST> when_true = nullptr;
+        std::shared_ptr<ScopeAST> when_false = nullptr;
 
     public:
         ConditionalAST(
+            std::string condition,
             int depth
         ) :
-            AliasAST("", depth)
+            AliasAST("", depth),
+            condition(condition)
         {
             type = AST_CONDITIONAL;
         }
 
+        const std::string get_condition() const;
         void set_target(bool, std::shared_ptr<ScopeAST>);
         std::shared_ptr<ScopeAST> get_target(bool);
 
         friend std::ostream& operator<<(std::ostream&, const ConditionalAST&);
 };
 std::ostream& operator<<(std::ostream&, const ConditionalAST&);
+
+
+/******************************************************************************
+ *                             IdentifierAST                                  *
+ ******************************************************************************/
+class IdentifierAST : public ExpressionAST {
+
+    protected:
+        // Ignoring for the moment some targets will be calculated.
+        std::shared_ptr<ScopeAST> target = nullptr;
+
+    public:
+        IdentifierAST(
+            std::string name,
+            int depth
+        ) :
+            ExpressionAST(depth)
+        {
+            type = AST_IDENTIFIER;
+            this->name = name;
+        }
+
+        void set_target(std::shared_ptr<ScopeAST>);
+        const std::shared_ptr<ScopeAST> get_target() const;
+
+        friend std::ostream& operator<<(std::ostream&, const IdentifierAST&);
+};
+std::ostream& operator<<(std::ostream&, const IdentifierAST&);
+
+
+/******************************************************************************
+ *                                StringAST                                   *
+ ******************************************************************************/
+class StringAST : public ExpressionAST {
+
+    protected:
+        std::string value;
+        
+    public:
+        StringAST(
+            std::string value,
+            int depth
+        ) :
+            ExpressionAST(depth),
+            value(value)
+        {
+            type = AST_STRING;
+        }
+
+        friend std::ostream& operator<<(std::ostream&, const StringAST&);
+};
+std::ostream& operator<<(std::ostream&, const StringAST&);
+
+
+/******************************************************************************
+ *                                 LongAST                                    *
+ ******************************************************************************/
+class LongAST : public ExpressionAST {
+
+    protected:
+        long value;
+        
+    public:
+        LongAST(
+            long value,
+            int depth
+        ) :
+            ExpressionAST(depth),
+            value(value)
+        {
+            type = AST_LONG;
+        }
+
+        friend std::ostream& operator<<(std::ostream&, const LongAST&);
+};
+std::ostream& operator<<(std::ostream&, const LongAST&);
+
+
+/******************************************************************************
+ *                                DoubleAST                                   *
+ ******************************************************************************/
+class DoubleAST : public ExpressionAST {
+
+    protected:
+        double value;
+        
+    public:
+        DoubleAST(
+            double value,
+            int depth
+        ) :
+            ExpressionAST(depth),
+            value(value)
+        {
+            type = AST_DOUBLE;
+        }
+
+        friend std::ostream& operator<<(std::ostream&, const DoubleAST&);
+};
+std::ostream& operator<<(std::ostream&, const DoubleAST&);
+
+
+/******************************************************************************
+ *                                 NullAST                                    *
+ ******************************************************************************/
+class NullAST : public ExpressionAST {
+
+    public:
+        NullAST(
+            int depth
+        ) :
+            ExpressionAST(depth)
+        {
+            type = AST_NULL;
+        }
+
+        friend std::ostream& operator<<(std::ostream&, const NullAST&);
+};
+std::ostream& operator<<(std::ostream&, const NullAST&);
+
+
+/******************************************************************************
+ *                              OperatorAST                                   *
+ ******************************************************************************/
+class OperatorAST : public ExpressionAST {
+
+    protected:
+        std::string op;
+        bool is_self;
+
+    public:
+        OperatorAST(
+            std::string op,
+            bool is_self,
+            int depth
+        ) :
+            ExpressionAST(depth),
+            op(op),
+            is_self(is_self)
+        {
+            type = AST_OPERATOR;
+        }
+
+        const std::string get_op() const;
+        const bool get_is_self() const;
+};
+std::ostream& operator<<(std::ostream&, const OperatorAST&);
+
+
+/******************************************************************************
+ *                              ReferenceAST                                  *
+ ******************************************************************************/
+class ReferenceAST : public OperatorAST {
+
+    protected:
+        // Ignoring for the moment some targets will be calculated.
+        std::shared_ptr<ExpressionAST> expression = nullptr;
+
+    public:
+        ReferenceAST(
+            bool is_self,
+            int depth
+        ) :
+            OperatorAST("", is_self, depth)
+        {
+            type = AST_REFERENCE;
+        }
+
+        void add_expression(std::shared_ptr<ExpressionAST>);
+        std::shared_ptr<ExpressionAST> get_expression();
+
+        friend std::ostream& operator<<(std::ostream&, const ReferenceAST&);
+};
+std::ostream& operator<<(std::ostream&, const ReferenceAST&);
+
