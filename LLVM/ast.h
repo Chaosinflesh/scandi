@@ -43,7 +43,7 @@ enum ASTType {
  ******************************************************************************/
 class ScopeAST {
 
-    protected:
+    public:
         std::string name;                                                       // Useful for debugging.
         ASTType type = AST_SCOPE;                                               // Used to determine which << operator to use.
         int depth;                                                              // This is useful for tree building.
@@ -52,7 +52,6 @@ class ScopeAST {
         std::vector<std::shared_ptr<ScopeAST>> members_by_order;                // Execution happens in order here.
         std::map<std::string, std::shared_ptr<ScopeAST>> members_by_name;       // Used for building the reference connections.
         
-    public:
         ScopeAST(
             std::string name,
             int depth,
@@ -63,10 +62,6 @@ class ScopeAST {
             is_static(is_static)
         {}
 
-        std::string get_name() const;
-        ASTType get_type() const;
-        int get_depth() const;
-        bool get_is_static() const;
         bool has_direct_member(const std::string&) const;
         bool has_member_visible(const std::string&) const;
         virtual ~ScopeAST() {}
@@ -80,7 +75,6 @@ class ScopeAST {
             bool
         );
 
-        friend std::ostream& operator<<(std::ostream&, const ScopeAST&);
 };
 std::ostream& operator<<(std::ostream&, const ScopeAST&);
 
@@ -100,7 +94,6 @@ class LabelAST : public ScopeAST {
             type = AST_LABEL;
         }
 
-        friend std::ostream& operator<<(std::ostream&, const LabelAST&);
 };
 std::ostream& operator<<(std::ostream&, const LabelAST&);
 
@@ -121,7 +114,6 @@ class VariableAST : public ScopeAST {
             type = AST_VARIABLE;
         }
 
-        friend std::ostream& operator<<(std::ostream&, const VariableAST&);
 };
 std::ostream& operator<<(std::ostream&, const VariableAST&);
 
@@ -131,12 +123,11 @@ std::ostream& operator<<(std::ostream&, const VariableAST&);
  ******************************************************************************/
 class FunctionAST : public ScopeAST {
 
-    protected:
+    public:
         bool takes_varargs;
         std::vector<std::string> parameters_by_order;
         std::map<std::string, std::shared_ptr<VariableAST>> parameters_by_name;
 
-    public:
         FunctionAST(
             std::string name,
             int depth,
@@ -151,7 +142,6 @@ class FunctionAST : public ScopeAST {
 
         void add_parameter(std::string);
 
-        friend std::ostream& operator<<(std::ostream&, const FunctionAST&);
 };
 std::ostream& operator<<(std::ostream&, const FunctionAST&);
 
@@ -161,10 +151,9 @@ std::ostream& operator<<(std::ostream&, const FunctionAST&);
  ******************************************************************************/
 class ExpressionAST : public ScopeAST {
 
-    protected:
+    public:
         std::shared_ptr<ExpressionAST> next = nullptr;
 
-    public:
         ExpressionAST(
             int depth
         ) :
@@ -173,10 +162,6 @@ class ExpressionAST : public ScopeAST {
             type = AST_EXPRESSION;
         }
 
-        void set_next(std::shared_ptr<ExpressionAST>);
-        const std::shared_ptr<ExpressionAST> get_next() const;
-
-        friend std::ostream& operator<<(std::ostream&, const ExpressionAST&);
 };
 std::ostream& operator<<(std::ostream&, const ExpressionAST&);
 
@@ -186,10 +171,9 @@ std::ostream& operator<<(std::ostream&, const ExpressionAST&);
  ******************************************************************************/
 class AliasAST : public ScopeAST {
 
-    protected:
+    public:
         std::shared_ptr<ExpressionAST> expression = nullptr;
 
-    public:
         AliasAST(
             std::string name,
             int depth
@@ -199,10 +183,6 @@ class AliasAST : public ScopeAST {
             type = AST_ALIAS;
         }
 
-        void add_expression(std::shared_ptr<ExpressionAST>);
-        std::shared_ptr<ExpressionAST> get_expression();
-
-        friend std::ostream& operator<<(std::ostream&, const AliasAST&);
 };
 std::ostream& operator<<(std::ostream&, const AliasAST&);
 
@@ -212,12 +192,11 @@ std::ostream& operator<<(std::ostream&, const AliasAST&);
  ******************************************************************************/
 class ConditionalAST : public AliasAST {
 
-    protected:
+    public:
         std::string condition;
         std::shared_ptr<ScopeAST> when_true = nullptr;
         std::shared_ptr<ScopeAST> when_false = nullptr;
 
-    public:
         ConditionalAST(
             std::string condition,
             int depth
@@ -228,11 +207,6 @@ class ConditionalAST : public AliasAST {
             type = AST_CONDITIONAL;
         }
 
-        const std::string get_condition() const;
-        void set_target(bool, std::shared_ptr<ScopeAST>);
-        std::shared_ptr<ScopeAST> get_target(bool);
-
-        friend std::ostream& operator<<(std::ostream&, const ConditionalAST&);
 };
 std::ostream& operator<<(std::ostream&, const ConditionalAST&);
 
@@ -242,11 +216,10 @@ std::ostream& operator<<(std::ostream&, const ConditionalAST&);
  ******************************************************************************/
 class IdentifierAST : public ExpressionAST {
 
-    protected:
+    public:
         // Ignoring for the moment some targets will be calculated.
         std::shared_ptr<ScopeAST> target = nullptr;
 
-    public:
         IdentifierAST(
             std::string name,
             int depth
@@ -257,10 +230,6 @@ class IdentifierAST : public ExpressionAST {
             this->name = name;
         }
 
-        void set_target(std::shared_ptr<ScopeAST>);
-        const std::shared_ptr<ScopeAST> get_target() const;
-
-        friend std::ostream& operator<<(std::ostream&, const IdentifierAST&);
 };
 std::ostream& operator<<(std::ostream&, const IdentifierAST&);
 
@@ -270,10 +239,9 @@ std::ostream& operator<<(std::ostream&, const IdentifierAST&);
  ******************************************************************************/
 class StringAST : public ExpressionAST {
 
-    protected:
+    public:
         std::string value;
         
-    public:
         StringAST(
             std::string value,
             int depth
@@ -284,7 +252,6 @@ class StringAST : public ExpressionAST {
             type = AST_STRING;
         }
 
-        friend std::ostream& operator<<(std::ostream&, const StringAST&);
 };
 std::ostream& operator<<(std::ostream&, const StringAST&);
 
@@ -294,10 +261,9 @@ std::ostream& operator<<(std::ostream&, const StringAST&);
  ******************************************************************************/
 class BinaryAST : public ExpressionAST {
 
-    protected:
+    public:
         std::vector<char> value;
         
-    public:
         BinaryAST(
             std::string value,
             int depth
@@ -308,7 +274,6 @@ class BinaryAST : public ExpressionAST {
             // TODO: convert value to value!
         }
 
-        friend std::ostream& operator<<(std::ostream&, const BinaryAST&);
 };
 std::ostream& operator<<(std::ostream&, const BinaryAST&);
 
@@ -318,10 +283,9 @@ std::ostream& operator<<(std::ostream&, const BinaryAST&);
  ******************************************************************************/
 class LongAST : public ExpressionAST {
 
-    protected:
+    public:
         long value;
         
-    public:
         LongAST(
             long value,
             int depth
@@ -332,7 +296,6 @@ class LongAST : public ExpressionAST {
             type = AST_LONG;
         }
 
-        friend std::ostream& operator<<(std::ostream&, const LongAST&);
 };
 std::ostream& operator<<(std::ostream&, const LongAST&);
 
@@ -342,10 +305,9 @@ std::ostream& operator<<(std::ostream&, const LongAST&);
  ******************************************************************************/
 class DoubleAST : public ExpressionAST {
 
-    protected:
+    public:
         double value;
         
-    public:
         DoubleAST(
             double value,
             int depth
@@ -356,7 +318,6 @@ class DoubleAST : public ExpressionAST {
             type = AST_DOUBLE;
         }
 
-        friend std::ostream& operator<<(std::ostream&, const DoubleAST&);
 };
 std::ostream& operator<<(std::ostream&, const DoubleAST&);
 
@@ -375,7 +336,6 @@ class NullAST : public ExpressionAST {
             type = AST_NULL;
         }
 
-        friend std::ostream& operator<<(std::ostream&, const NullAST&);
 };
 std::ostream& operator<<(std::ostream&, const NullAST&);
 
@@ -385,11 +345,10 @@ std::ostream& operator<<(std::ostream&, const NullAST&);
  ******************************************************************************/
 class OperatorAST : public ExpressionAST {
 
-    protected:
+    public:
         std::string op;
         bool is_self;
 
-    public:
         OperatorAST(
             std::string op,
             bool is_self,
@@ -402,8 +361,6 @@ class OperatorAST : public ExpressionAST {
             type = AST_OPERATOR;
         }
 
-        const std::string get_op() const;
-        const bool get_is_self() const;
 };
 std::ostream& operator<<(std::ostream&, const OperatorAST&);
 
@@ -413,11 +370,10 @@ std::ostream& operator<<(std::ostream&, const OperatorAST&);
  ******************************************************************************/
 class ReferenceAST : public OperatorAST {
 
-    protected:
+    public:
         // Ignoring for the moment some targets will be calculated.
         std::shared_ptr<ExpressionAST> expression = nullptr;
 
-    public:
         ReferenceAST(
             bool is_self,
             int depth
@@ -427,10 +383,6 @@ class ReferenceAST : public OperatorAST {
             type = AST_REFERENCE;
         }
 
-        void add_expression(std::shared_ptr<ExpressionAST>);
-        std::shared_ptr<ExpressionAST> get_expression();
-
-        friend std::ostream& operator<<(std::ostream&, const ReferenceAST&);
 };
 std::ostream& operator<<(std::ostream&, const ReferenceAST&);
 

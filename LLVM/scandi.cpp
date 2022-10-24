@@ -24,6 +24,9 @@ int main(int argc, char** argv) {
     if (!parse_to_ast(tokens, global)) {
         std::cerr << "PARSING FAILED" << std::endl;
     }
+#ifdef DEBUG
+    std::cerr << *global;
+#endif
 
     // 3. Semantic analysis
     //    TODO: Add in stdlib here

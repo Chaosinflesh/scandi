@@ -63,8 +63,7 @@ EXP_PTR parse_expression(TOKEN_IT token, TOKEN_IT end, int depth) {
                         if (stop - token < 2) {
                             throw std::domain_error("Malformed reference.");
                         }
-                        auto ref_ex = parse_expression(token + 1, stop, depth);
-                        temp2->add_expression(ref_ex);
+                        temp2->expression = parse_expression(token + 1, stop, depth);
                         temp = temp2;
                         token = stop;
 
@@ -80,7 +79,7 @@ EXP_PTR parse_expression(TOKEN_IT token, TOKEN_IT end, int depth) {
         }
         if (temp) {
             if (current) {
-                current->set_next(temp);
+                current->next = temp;
                 current = temp;
             } else {
                 base = temp;
@@ -104,8 +103,7 @@ FN( parse_conditional) {
         throw std::domain_error("Empty conditional");
     }
     auto c = std::make_shared<ConditionalAST>((end - 1)->s_val, token->l_val);
-    auto ex = parse_expression(token + 1, end - 1, token->l_val + 8);
-    c->add_expression(ex);
+    c->expression = parse_expression(token + 1, end - 1, token->l_val);
     return ScopeAST::add_member(ast, c, false);
 }
 
@@ -121,8 +119,7 @@ FN( parse_alias ) {
         throw std::domain_error("Unnamed alias");
     }
     auto a = std::make_shared<AliasAST>((end - 2)->s_val, token->l_val);
-    auto ex = parse_expression(token + 2, end - 2, token->l_val + 8);
-    a->add_expression(ex);
+    a->expression = parse_expression(token + 2, end - 2, token->l_val);
     return ScopeAST::add_member(ast, a, true);
 }
 
@@ -165,7 +162,7 @@ FN( parse_variable ) {
 
     // Check for assignment
     if (end - token >= 4 && (end - 1)->is_assignment()) {
-        auto ex = parse_expression(token + 1, end, token->l_val + 8);
+        auto ex = parse_expression(token + 1, end, token->l_val);
         ast = ScopeAST::add_member(ast, ex, false);
     }
     return ast;
@@ -232,6 +229,9 @@ FN( parse_scope ) {
 
 
 AST_PTR parse_to_ast(std::vector<Token> tokens, AST_PTR ast) {
+#ifdef DEBUG
+    std::cerr << std::endl << "PARSING";
+#endif
     auto token = tokens.begin();
     auto end = tokens.end();
 
