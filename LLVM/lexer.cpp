@@ -67,7 +67,11 @@ FN( get_identifier ) {
         pos++;
     }
 
-    if (!tokens_out.empty() && (tokens_out.back().type == TOK_FUNCTION || tokens_out.back().type == TOK_VARIABLE)) {
+    if (!tokens_out.empty() && tokens_out.back().s_val.empty() && (
+        tokens_out.back().type == TOK_FUNCTION
+     || tokens_out.back().type == TOK_VARIABLE
+     || tokens_out.back().type == TOK_LABEL
+    )) {
         tokens_out.back().s_val = identifier;
     } else {
         TOK_ADD(TOK_IDENTIFIER, identifier, 0L, 0.0, false, false, DEBUG_INIT_POS);
@@ -292,10 +296,32 @@ bool tokenize_stream(
 
 
 std::ostream& operator<<(std::ostream& o, const Token& t) {
-    o << std::string(t.pos, ' ');
-    o << "[" << t.type << ",\"" << t.s_val << "\"," << t.l_val << "," << t.d_val << "]";
-#ifdef DEBUG
-    o << "(" << t.filename << ":" << t.line_no << "@" << t.pos << ")";
-#endif
+    if (t.type == TOK_SCOPE) {
+        o << std::endl << std::string(t.pos, ' ');
+    } else {
+        o << std::string(1, t.type) << (t.targets_self ? "!" : "") << (t.is_static ? "+" : "") << ".";
+        switch (t.type) {
+            case TOK_LABEL:
+            case TOK_VARIABLE:
+            case TOK_FUNCTION:
+            case TOK_IDENTIFIER:
+            case TOK_BINARY:
+            case TOK_STRING:
+            case TOK_OPERATOR:
+                o << t.s_val;
+                break;
+
+            default:
+                if (t.s_val == std::string(1, LEX_DECIMAL_POINT)) {
+                    o << t.d_val;
+                } else if (t.s_val.empty()) {
+                    o << t.l_val;
+                } else {
+                    o << t.s_val;
+                }
+                break;
+        }
+        o << " ";
+    }
     return o;
 }

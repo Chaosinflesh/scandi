@@ -6,9 +6,9 @@
 
 #include <iostream>
 #include <string>
-//#include "ast.h"
+#include "ast.h"
 #include "lexer.h"
-//#include "parser.h"
+#include "parser.h"
 
 
 int main(int argc, char** argv) {
@@ -18,22 +18,13 @@ int main(int argc, char** argv) {
         std::cerr << "LEXING FAILED" << std::endl;
         return 1;
     }
-#ifdef DEBUG
-    std::cout << tokens.size() << " tokens" << std::endl;
-    for (auto t: tokens) {
-        std::cout << t << std::endl;
-    }
-#endif
-/*
+
     // 2. Parse
-    auto global = std::make_shared<ScopeAST>(ScopeAST("global", -1, true));
+    auto global = std::make_shared<ScopeAST>("global", -1, true);
     if (!parse_to_ast(tokens, global)) {
         std::cerr << "PARSING FAILED" << std::endl;
     }
-//#ifdef DEBUG
-    std::cout << *global << std::endl;
-//#endif
-*/
+
     // 3. Semantic analysis
     //    TODO: Add in stdlib here
     return 0;

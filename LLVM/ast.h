@@ -26,6 +26,7 @@ enum ASTType {
 
     // Types
     AST_IDENTIFIER,
+    AST_BINARY,
     AST_STRING,
     AST_LONG,
     AST_DOUBLE,
@@ -33,9 +34,7 @@ enum ASTType {
 
     // Operators
     AST_REFERENCE,
-
-    AST_OPERATOR,           
-    AST_CONDITIONAL_OP      // Contains 2 jump values, which is taken depends on previous stack value.
+    AST_OPERATOR
 };
 
 
@@ -288,6 +287,30 @@ class StringAST : public ExpressionAST {
         friend std::ostream& operator<<(std::ostream&, const StringAST&);
 };
 std::ostream& operator<<(std::ostream&, const StringAST&);
+
+
+/******************************************************************************
+ *                                BinaryAST                                   *
+ ******************************************************************************/
+class BinaryAST : public ExpressionAST {
+
+    protected:
+        std::vector<char> value;
+        
+    public:
+        BinaryAST(
+            std::string value,
+            int depth
+        ) :
+            ExpressionAST(depth)
+        {
+            type = AST_BINARY;
+            // TODO: convert value to value!
+        }
+
+        friend std::ostream& operator<<(std::ostream&, const BinaryAST&);
+};
+std::ostream& operator<<(std::ostream&, const BinaryAST&);
 
 
 /******************************************************************************

@@ -33,5 +33,8 @@
 [] $first $second @b
     ` TODO
 
+$testNesting z[a[b 2 +]] =
+$testNesting2 [a[b] 2 +] =
+
 a
 b

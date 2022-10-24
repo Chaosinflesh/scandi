@@ -101,7 +101,7 @@ std::ostream& operator<<(std::ostream& os, const ScopeAST& ast) {
  *                              LabelAST                                      *
  ******************************************************************************/
 std::ostream& operator<<(std::ostream& os, const LabelAST& label) {
-    os << std::endl << std::string(label.depth, ' ') << label.name << "[LabelAST]";
+    os << std::endl << std::string(label.depth, ' ') << label.name << ":";
     return os;
 }
 
@@ -110,7 +110,7 @@ std::ostream& operator<<(std::ostream& os, const LabelAST& label) {
  *                             VariableAST                                    *
  ******************************************************************************/
 std::ostream& operator<<(std::ostream& os, const VariableAST& variable) {
-    os << std::endl << std::string(variable.depth, ' ') << variable.name << "[VariableAST]" << (variable.get_is_static() ? "STATIC" : "");
+    os << std::endl << std::string(variable.depth, ' ') << variable.name << (variable.get_is_static() ? "_ST" : "");
     return os;
 }
 
@@ -119,7 +119,7 @@ std::ostream& operator<<(std::ostream& os, const VariableAST& variable) {
  *                             FunctionAST                                    *
  ******************************************************************************/
 std::ostream& operator<<(std::ostream& os, const FunctionAST& function) {
-    os << std::endl << std::string(function.depth, ' ') << function.name << "[FunctionAST]" << (function.get_is_static() ? "STATIC" : "");
+    os << std::endl << std::string(function.depth, ' ') << function.name << (function.get_is_static() ? "_ST" : "");
     for (auto parameter: function.parameters_by_order) {
         os << " " << parameter;
     }
@@ -177,11 +177,11 @@ const std::shared_ptr<ExpressionAST> ExpressionAST::get_next() const {
  *                              ReferenceAST                                  *
  ******************************************************************************/
 std::ostream& operator<<(std::ostream& os, const ReferenceAST& ref) {
-    os << "[ReferenceAST] -> [";
+    os << "[(" << (ref.get_is_self() ? "! " : " ");
     if (ref.expression) {
         os << *ref.expression;
     }
-    os << "] ";
+    os << ")] ";
     return os;
 }
 
@@ -200,7 +200,7 @@ std::shared_ptr<ExpressionAST> ReferenceAST::get_expression() {
  *                                AliasAST                                    *
  ******************************************************************************/
 std::ostream& operator<<(std::ostream& os, const AliasAST& alias) {
-    os << std::endl << std::string(alias.depth, ' ') << alias.name << "[AliasAST] ->";
+    os << std::endl << std::string(alias.depth, ' ') << alias.name << "->";
     if (alias.expression) {
         os << *alias.expression;
     }
@@ -222,7 +222,7 @@ std::shared_ptr<ExpressionAST> AliasAST::get_expression() {
  *                            ConditionalAST                                  *
  ******************************************************************************/
 std::ostream& operator<<(std::ostream& os, const ConditionalAST& cond) {
-    os << std::endl << std::string(cond.depth, ' ') << "[ConditionalAST] -> " << cond.get_condition() << " ";
+    os << std::endl << std::string(cond.depth, ' ') << cond.get_condition() << "->";
     if (cond.expression) {
         os << *cond.expression;
     }
@@ -262,7 +262,7 @@ std::shared_ptr<ScopeAST> ConditionalAST::get_target(bool when_true) {
  *                             IdentifierAST                                  *
  ******************************************************************************/
 std::ostream& operator<<(std::ostream& os, const IdentifierAST& id) {
-    os << id.name << "[IdentifierAST] ";
+    os << id.name << " ";
     if (id.get_target()) {
         os << "-> " << id.get_target()->get_name();
     }
@@ -286,6 +286,18 @@ const std::shared_ptr<ScopeAST> IdentifierAST::get_target() const {
 std::ostream& operator<<(std::ostream& os, const StringAST& s) {
     os << "\"" << s.value << "\" " ;
     return os;
+}
+
+
+/******************************************************************************
+ *                                BinaryAST                                   *
+ ******************************************************************************/
+std::ostream& operator<<(std::ostream& os, const BinaryAST& s) {
+    os << "b'" << std::hex;
+    for (auto b: s.value) {
+        os << (unsigned int)b;
+    }
+    return os << std::dec;
 }
 
 
@@ -320,7 +332,7 @@ std::ostream& operator<<(std::ostream& os, const NullAST& n) {
  *                              OperatorAST                                   *
  ******************************************************************************/
 std::ostream& operator<<(std::ostream& os, const OperatorAST& o) {
-    os <<  (o.get_is_static() ? o.get_op() : "") << o.get_op() << " ";
+    os <<  (o.get_is_static() ? o.get_op() : "") << o.get_op() ;
     return os;
 }
 
