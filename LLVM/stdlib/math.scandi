@@ -2,11 +2,29 @@
 ` Copyright: Neil Bradley
 ` License: GPL 3.0
 
+` Minimum of 2 elements
 $one $two @@min
     one two <
         min two =
     :
         min one =
 
+` Minimum of 3 elements
 $one $two $three @@min3
     min3 one two three min min =
+
+` Minimum of an arbitrary number of elements
+[] @@minx
+    ! 0 ?
+        minx 0 =
+    ! 1 ?
+        minx [0] =
+    $a [0] =
+    $b 1 =
+    \loop
+        b ! ?
+            minx a =
+        a [b] <
+            a [b] =
+        b 1 +
+        loop
