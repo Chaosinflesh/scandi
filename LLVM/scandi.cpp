@@ -5,6 +5,7 @@
 // License: GPL 3.0
 
 #include <cstring>
+#include <dirent.h>
 #include <fstream>
 #include <iostream>
 #include <string>
@@ -18,7 +19,7 @@
 #define SCANDI_VERSION 0.1
 
 
-bool DEBUG_FLAG = false;
+bool debug_set = false;
 
 
 void get_version() {
@@ -37,28 +38,41 @@ void get_help() {
 }
 
 
-std::string LIB_DIR = "stdlib";
-std::string OUTPUT = "a.out";
-std::vector<std::string> FILENAMES;
-std::vector<std::string> LIBFILES;
+std::string lib_dir = "./stdlib/";
+std::string output = "a.out";
+std::vector<std::string> in_files;
+std::vector<std::string> lib_files;
 
 
 void get_library_files() {
+    DIR* dir;
+    if ((dir = opendir(lib_dir.c_str())) != NULL) {
+        struct dirent *entry;
+        while ((entry = readdir(dir)) != NULL) {
+            if (entry->d_type == DT_REG && std::string(entry->d_name).rfind(".scandi") != 0) {
+                lib_files.push_back(lib_dir + entry->d_name);
+            }
+        }
+        closedir (dir);
+    } else {
+        std::cerr << std::endl << "Unable to open lib_dir, program may not compile." << std::endl;
+    }
 }
-
-
-
 
 
 int run() {
     auto global = std::make_shared<ScopeAST>("global", -1, true);
 
-    for (auto f: FILENAMES) {
+    in_files.insert(in_files.begin(), lib_files.begin(), lib_files.end());
+
+    for (auto f: in_files) {
         std::vector<Token> tokens;
 
         // 1. Tokenize
         std::ifstream file(f);
-        auto name = f.substr(f.find_last_of("/") + 1, f.length() - f.find_last_of(".scandi"));
+        auto name_start = f.find_last_of("/") + 1;
+        auto name_end = f.find(".scandi", name_start);
+        auto name = f.substr(name_start, name_end - name_start);
         if (!tokenize_stream(tokens, file, name)) {
             std::cerr << "LEXING FAILED" << std::endl;
             return 1;
@@ -77,7 +91,7 @@ int run() {
     //    TODO: Add in stdlib here
     global = analyse_semantics(global);
 
-    DEBUG ( "After semantics:" << std::endl << *global << std::endl; )
+    DEBUG( "After semantics:" << std::endl << *global << std::endl; )
 
     return 0;
 }
@@ -99,11 +113,11 @@ int main(const int argc, const char* argv[]) {
             get_help();
             
         } else if (std::strcmp(argv[i], "--debug") == 0) {
-            DEBUG_FLAG = true;
+            debug_set = true;
             
         } else if (std::strcmp(argv[i], "--libdir") == 0) {
             if (i + 1 < argc) {
-                LIB_DIR = argv[i + 1];
+                lib_dir = argv[i + 1];
             } else {
                 std::cerr << "Invalid argument, libs directory expected" << std::endl;
             }
@@ -111,32 +125,32 @@ int main(const int argc, const char* argv[]) {
             
         } else if (std::strcmp(argv[i], "-o") == 0) {
             if (i + 1 < argc) {
-                OUTPUT = argv[i + 1];
+                output = argv[i + 1];
             } else {
                 std::cerr << "Invalid argument, outfile expected" << std::endl;
             }
             i++;
             
         } else {
-            FILENAMES.push_back(argv[i]);
+            in_files.push_back(argv[i]);
             
         }
     }
 
-    if (FILENAMES.empty()) {
+    if (in_files.empty()) {
         std::cerr << "No input files" << std::endl;
         return 1;
     }
 
     get_library_files();
 
-    if (DEBUG_FLAG) {
+    if (debug_set) {
         std::cout << std::endl << "Processing:";
-        for (auto f : FILENAMES) {
+        for (auto f : in_files) {
             std::cout << std::endl << "    " << f;
         }
-        std::cout << std::endl << "Libraries:";
-        for (auto l : LIBFILES) {
+        std::cout << std::endl << "Libraries: " << lib_dir;
+        for (auto l : lib_files) {
             std::cout << std::endl << "    " << l;
         }
         std::cout << std::endl;

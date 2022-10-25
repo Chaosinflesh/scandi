@@ -7,9 +7,7 @@
 #pragma once
 
 
-extern bool DEBUG_FLAG;
+extern bool debug_set;
 
 
-#define DEBUG( ... ) if (DEBUG_FLAG) { std::cerr << std::endl << __VA_ARGS__ }
-
-
+#define DEBUG( ... ) if (debug_set) { std::cerr << std::endl << __VA_ARGS__ }

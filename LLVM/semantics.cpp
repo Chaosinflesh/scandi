@@ -91,9 +91,9 @@ AST_PTR analyse_semantics(AST_PTR ast) {
     success &= analyse_auto_assignments(ast);
     success &= map_aliases(ast);
     success &= map_identifiers(ast);
-    success &= connect_conditionals(ast);
     success &= analyse_static_use(ast);
     success &= check_argument_counts(ast);
+    success &= connect_conditionals(ast);
     DEBUG( ""; )
     if (!success) {
         throw std::domain_error("Semantic errors occured, please check the log");

@@ -18,7 +18,7 @@
 
 
 EXP_PTR parse_expression(TOKEN_IT token, TOKEN_IT end, int depth) {
-    if (DEBUG_FLAG) {
+    if (debug_set) {
         std::cerr << " ---EXPR> ";
         for (auto b = token; b != end; b++) {
             std::cerr << *b;
@@ -204,7 +204,7 @@ FN( parse_raw ) {
 
 
 FN( parse_scope ) {
-    if( DEBUG_FLAG ) {
+    if (debug_set) {
         for (auto z = token; z < end; z++) {
             std::cerr << *z;
         }

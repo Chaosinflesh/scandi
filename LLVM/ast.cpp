@@ -106,7 +106,7 @@ std::ostream& operator<<(std::ostream& os, const LabelAST& label) {
  *                             VariableAST                                    *
  ******************************************************************************/
 std::ostream& operator<<(std::ostream& os, const VariableAST& variable) {
-    os << variable.name << (variable.is_static ? "+ " : " ");
+    os << "$" << variable.name << (variable.is_static ? "+ " : " ");
     return os;
 }
 
@@ -119,7 +119,7 @@ std::ostream& operator<<(std::ostream& os, const FunctionAST& function) {
     for (auto parameter: function.parameters_by_order) {
         os << " " << parameter;
     }
-    os << (function.takes_varargs ? " +" : "");
+    os << (function.takes_varargs ? " []" : "");
     return os;
 }
 

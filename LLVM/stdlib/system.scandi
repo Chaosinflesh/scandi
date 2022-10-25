@@ -2,17 +2,17 @@
 ` Copyright: Neil Bradley
 ` License: GPL 3.0
 
-[] @stdout
+$$stdout
 {{
     // C++ code goes here.
 }}
 
-[] @stdin
+$$stdin
 {{
     // C++ code goes here.
 }}
 
-[] @stderr
+$$stderr
 {{
     // C++ code goes here.
 }}
