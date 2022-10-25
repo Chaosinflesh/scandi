@@ -5,7 +5,6 @@
 // License: GPL 3.0
 
 #pragma once
-#include <memory>
 #include <vector>
 #include "ast.h"
 #include "lexer.h"

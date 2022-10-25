@@ -9,12 +9,16 @@
 #include <iostream>
 #include <string>
 #include "ast.h"
+#include "globals.h"
 #include "lexer.h"
 #include "parser.h"
 #include "semantics.h"
 
 
 #define SCANDI_VERSION 0.1
+
+
+bool DEBUG_FLAG = false;
 
 
 void get_version() {
@@ -27,6 +31,7 @@ void get_help() {
     std::cout << "options:" << std::endl;
     std::cout << "    --version             Get the current version" << std::endl;
     std::cout << "    --help                Display this help" << std::endl;
+    std::cout << "    --debug               Set debug flag for verbose output" << std::endl;
     std::cout << "    --libdir <libdir>     Get the current version" << std::endl;
     std::cout << "    -o <outfile>          Specify the executable name" << std::endl;
 }
@@ -66,14 +71,13 @@ int run() {
             return 1;
         }
     }
+    DEBUG( "After parsing:" << std::endl << *global << std::endl; )
 
     // 3. Semantic analysis
     //    TODO: Add in stdlib here
     global = analyse_semantics(global);
 
-#ifdef DEBUG_AST
-    std::cerr << *global << std::endl;
-#endif
+    DEBUG ( "After semantics:" << std::endl << *global << std::endl; )
 
     return 0;
 }
@@ -90,8 +94,13 @@ int main(const int argc, const char* argv[]) {
     for (int i = 1; i < argc; i++) {
         if (std::strcmp(argv[i], "--version") == 0) {
             get_version();
+            
         } else if (std::strcmp(argv[i], "--help") == 0) {
             get_help();
+            
+        } else if (std::strcmp(argv[i], "--debug") == 0) {
+            DEBUG_FLAG = true;
+            
         } else if (std::strcmp(argv[i], "--libdir") == 0) {
             if (i + 1 < argc) {
                 LIB_DIR = argv[i + 1];
@@ -99,6 +108,7 @@ int main(const int argc, const char* argv[]) {
                 std::cerr << "Invalid argument, libs directory expected" << std::endl;
             }
             i++;
+            
         } else if (std::strcmp(argv[i], "-o") == 0) {
             if (i + 1 < argc) {
                 OUTPUT = argv[i + 1];
@@ -106,8 +116,10 @@ int main(const int argc, const char* argv[]) {
                 std::cerr << "Invalid argument, outfile expected" << std::endl;
             }
             i++;
+            
         } else {
             FILENAMES.push_back(argv[i]);
+            
         }
     }
 
@@ -118,17 +130,17 @@ int main(const int argc, const char* argv[]) {
 
     get_library_files();
 
-#ifdef DEBUG
-    std::cout << std::endl << "Processing:";
-    for (auto f : FILENAMES) {
-        std::cout << std::endl << "    " << f;
+    if (DEBUG_FLAG) {
+        std::cout << std::endl << "Processing:";
+        for (auto f : FILENAMES) {
+            std::cout << std::endl << "    " << f;
+        }
+        std::cout << std::endl << "Libraries:";
+        for (auto l : LIBFILES) {
+            std::cout << std::endl << "    " << l;
+        }
+        std::cout << std::endl;
     }
-    std::cout << std::endl << "Libraries:";
-    for (auto l : LIBFILES) {
-        std::cout << std::endl << "    " << l;
-    }
-    std::cout << std::endl;
-#endif
 
     return run();
 }

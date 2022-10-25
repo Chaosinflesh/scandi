@@ -8,6 +8,7 @@
 #include <string>
 #include <typeinfo>
 #include "ast.h"
+#include "globals.h"
 
 
 /******************************************************************************
@@ -63,7 +64,7 @@ std::ostream& operator<<(std::ostream& os, const ScopeAST& ast) {
         case AST_VARIABLE: os << dynamic_cast<const VariableAST&>(ast); break;
         case AST_FUNCTION: os << dynamic_cast<const FunctionAST&>(ast); break;
         case AST_ALIAS: os << dynamic_cast<const AliasAST&>(ast); break;
-        case AST_CONDITIONAL: os << dynamic_cast<const ConditionalAST&>(ast); break;
+        case AST_CONDITIONAL: os << dynamic_cast<const ConditionalAST&>(ast); return os;
         case AST_EXPRESSION: os << dynamic_cast<const ExpressionAST&>(ast); break;
         case AST_IDENTIFIER: os << dynamic_cast<const ExpressionAST&>(ast); break;
         case AST_STRING: os << dynamic_cast<const ExpressionAST&>(ast); break;
@@ -188,12 +189,15 @@ std::ostream& operator<<(std::ostream& os, const ConditionalAST& cond) {
     if (cond.expression) {
         os << *cond.expression;
     }
-    if (cond.when_true) {
-        os << *cond.when_true;
+    os << std::endl << std::string(cond.depth, ' ') <<  "TRUE:";
+    for (auto member : cond.members_by_order) {
+        os << *member;
     }
+    os << std::endl << std::string(cond.depth, ' ') << "FALSE:";
     if (cond.when_false) {
         os << *cond.when_false;
     }
+    os << std::endl << std::string(cond.depth, ' ') << "AFTER:";
     return os;
 }
 

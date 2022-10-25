@@ -30,14 +30,14 @@
 | \(\) | *NULL* <br> Signifies no value. |
 | \#<value> | *Interpret as Hexadecimal* <br> This value is in hexadecimal. When applied to a string, the string becomes a binary blob. |
 | ( and ) | *Negate* <br> Negates the final result of the expression between the braces. |
-| \{]{ and \}\} | Embedded code (probably LLVM IR, tbd.) |
+| \{\{ and \}\} | Embedded code (probably LLVM IR, tbd.) |
 
 ## Operators
 
 Operators generally remove an item (or two) from the stack, apply the operation, then return the value to the stack.
 Its important to note that the operation is applied _down_ - that is, the LHS is below the RHS in the stack.
 If an operator is the last item in the stack, and the first item was a variable, the results are returned to that variable.
-For example, `n 1 +` is equivalent to `n n 1 + =` - or `n = n + 1` in conventional parlance.
+For example, `n 1 +` is equivalent to `n n 1 + =` or `n = n + 1` in conventional parlance.
 
 
 | Operator | Operation |
@@ -47,13 +47,13 @@ For example, `n 1 +` is equivalent to `n n 1 + =` - or `n = n + 1` in convention
 | - | *Subtraction* |
 | * | *Multiplication* |
 | % | *Modulus* |
-| ~ | *Binary Complement* |
+| ~ | *Unary Complement* |
 | & | *Binary AND* |
 | \| | *Binary OR* |
 | ^ | *BINARY XOR* |
 | <- | *Shift Left* <br> Shifts 0's in from the right. |
 | -> | *Shift Right* <br> Shifts 0's in from the left. |
-| >> | *Signed Shift Right* <br> Shift whatever is in the MSB in from the right. |
+| >> | *Signed Shift Right* <br> Shift whatever is in the MSB in from the left. |
 | . | *DOT operator* <br> The DOT operator is a field reference. It can reference any named field in either a variable or a function. If used without context, refers to the local context. The DOT operator cannot be applied to an address. |
 | \[ and \] | *Index Operator* <br> The index operator references numbered fields in a variable or method. If used without context, refers to the local context. If used on an address, applies an offset to that address. |
 | ! | *Count Operator* <br> Returns the number of immediate child fields in the variable or function. Can be applied to the local context also. Cannot be used on an address. |
@@ -62,7 +62,7 @@ For example, `n 1 +` is equivalent to `n n 1 + =` - or `n = n + 1` in convention
 ## Comparators
 
 A comparator returns a true or false value. If the comparator is the last item in the stack, it then acts as a conditional - if the result is TRUE, the next line within scope is executed.
-If it is false, and there is an ALT(`:`) available in scope, that line is executed next.
+If it is false, and there is an ALT(`:`) immediately available in scope, that line is executed next.
 If a comparator is not a conditional, it simply returns a truth value to the top of the stack.
 It is necessary to assign a conditional to a variable - assignment is not automatically inferred the way it is with operators.
 Only basic elements can be compared like this, and they are compared by value.

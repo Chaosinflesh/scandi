@@ -8,6 +8,7 @@
 #include <iterator>
 #include <vector>
 #include "ast.h"
+#include "globals.h"
 #include "lexer.h"
 #include "parser.h"
 
@@ -17,12 +18,12 @@
 
 
 EXP_PTR parse_expression(TOKEN_IT token, TOKEN_IT end, int depth) {
-#ifdef DEBUG_PARSER
-    std::cerr << " ---EXPR> ";
-    for (auto b = token; b != end; b++) {
-        std::cerr << *b;
+    if (DEBUG_FLAG) {
+        std::cerr << " ---EXPR> ";
+        for (auto b = token; b != end; b++) {
+            std::cerr << *b;
+        }
     }
-#endif
     std::shared_ptr<ExpressionAST> base = nullptr, current = nullptr, temp;
 
     while (token != end) {
@@ -98,7 +99,7 @@ EXP_PTR parse_expression(TOKEN_IT token, TOKEN_IT end, int depth) {
 
 
 FN( parse_conditional) {
-    // when_true and when_false will be identified during semantic analysis.
+    // when_false will be identified during semantic analysis.
     if (end - token < 3) {
         throw std::domain_error("Empty conditional");
     }
@@ -203,11 +204,11 @@ FN( parse_raw ) {
 
 
 FN( parse_scope ) {
-#ifdef DEBUG_PARSER
-    for (auto z = token; z < end; z++) {
-        std::cerr << *z;
+    if( DEBUG_FLAG ) {
+        for (auto z = token; z < end; z++) {
+            std::cerr << *z;
+        }
     }
-#endif
 
     // Determine what kind of scope we are looking at.
     if (!token->s_val.empty()) {
@@ -244,9 +245,7 @@ FN( parse_scope ) {
 
 
 AST_PTR parse_to_ast(std::vector<Token> tokens, AST_PTR ast) {
-#ifdef DEBUG_PARSER
-    std::cerr << std::endl << "PARSING";
-#endif
+    DEBUG( "PARSING"; )
     auto token = tokens.begin();
     auto end = tokens.end();
 
@@ -276,9 +275,7 @@ AST_PTR parse_to_ast(std::vector<Token> tokens, AST_PTR ast) {
             token = scope_end;
         }
     }
-#ifdef DEBUG_PARSER
-    std::cerr << std::endl;
-#endif
+    DEBUG( ""; )
 
     return ast;
 }

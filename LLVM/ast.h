@@ -17,28 +17,28 @@
 
 
 enum ASTType {
-    AST_SCOPE,
-    AST_RAW,
+    AST_SCOPE = 1,
+    AST_RAW = 2,
 
     // Structural
-    AST_LABEL,
-    AST_VARIABLE,
-    AST_FUNCTION,
-    AST_ALIAS,
-    AST_EXPRESSION,
-    AST_CONDITIONAL,
+    AST_LABEL = 3,
+    AST_VARIABLE = 4,
+    AST_FUNCTION = 5,
+    AST_ALIAS = 6,
+    AST_EXPRESSION = 7,
+    AST_CONDITIONAL = 8,
 
     // Types
-    AST_IDENTIFIER,
-    AST_BINARY,
-    AST_STRING,
-    AST_LONG,
-    AST_DOUBLE,
-    AST_NULL,
+    AST_IDENTIFIER = 9,
+    AST_BINARY = 10,
+    AST_STRING = 11,
+    AST_LONG = 12,
+    AST_DOUBLE = 13,
+    AST_NULL = 14,
 
     // Operators
-    AST_REFERENCE,
-    AST_OPERATOR
+    AST_REFERENCE = 15,
+    AST_OPERATOR = 16
 };
 
 
@@ -221,7 +221,6 @@ class ConditionalAST : public AliasAST {
 
     public:
         std::string condition;
-        std::shared_ptr<ScopeAST> when_true = nullptr;
         std::shared_ptr<ScopeAST> when_false = nullptr;
 
         ConditionalAST(

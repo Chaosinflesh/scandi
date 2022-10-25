@@ -8,6 +8,7 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include "globals.h"
 #include "lexer.h"
 
 
@@ -275,9 +276,7 @@ bool tokenize_stream(
     std::istream& stream_in,
     const std::string filename
 ) {
-#ifdef DEBUG_LEXER
-    std::cerr << std::endl << "LEXING " << filename;
-#endif
+    DEBUG ( "LEXING " << filename; )
     bool success = true;
     int line_no = 1;
 
