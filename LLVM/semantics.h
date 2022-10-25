@@ -1,4 +1,4 @@
-// Scandi: parser.h
+// Scandi: semantics.h
 //
 // Author: Neil Bradley
 // Copyright: Neil Bradley
@@ -8,7 +8,6 @@
 #include <memory>
 #include <vector>
 #include "ast.h"
-#include "lexer.h"
 
 
-AST_PTR parse_to_ast(std::vector<Token>, AST_PTR);
+AST_PTR analyse_semantics(AST_PTR);

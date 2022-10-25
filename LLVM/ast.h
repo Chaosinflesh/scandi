@@ -13,8 +13,12 @@
 #include "lexer.h"
 
 
+#define AST_PTR std::shared_ptr<ScopeAST>
+
+
 enum ASTType {
     AST_SCOPE,
+    AST_RAW,
 
     // Structural
     AST_LABEL,
@@ -77,6 +81,29 @@ class ScopeAST {
 
 };
 std::ostream& operator<<(std::ostream&, const ScopeAST&);
+
+
+/******************************************************************************
+ *                               RawAST                                       *
+ ******************************************************************************/
+class RawAST : public ScopeAST {
+
+    public:
+        std::string code;
+        
+        RawAST(
+            std::string name,
+            std::string code,
+            int depth
+        ) :
+            ScopeAST(name, depth, false),
+            code(code)
+        {
+            type = AST_RAW;
+        }
+
+};
+std::ostream& operator<<(std::ostream&, const RawAST&);
 
 
 /******************************************************************************

@@ -51,8 +51,9 @@ const bool Token::is_conditional() const {
 
 #define FN( NAME )      size_t NAME (std::vector<Token>& tokens_out, const std::string line_in, const std::string filename, const int line_no, size_t pos)
 #define INIT_POS        auto init_pos = pos
-#define DEBUG_POS       filename, line_no, pos
-#define DEBUG_INIT_POS  filename, line_no, init_pos
+#define ARGS_POS       filename, line_no, pos
+#define DEBUG_POS       filename, line_no, (pos + 1)
+#define DEBUG_INIT_POS  filename, line_no, (init_pos + 1)
 #define TOK_ADD( ... )  tokens_out.push_back(Token( __VA_ARGS__ ))
 
 
@@ -148,7 +149,7 @@ FN( get_hex ) {
     }
     if (line_in[pos] == LEX_QUOTE || line_in[pos] == LEX_APOSTROPHE) {
         // Binary blob.
-        pos = get_string(tokens_out, line_in, DEBUG_POS);
+        pos = get_string(tokens_out, line_in, ARGS_POS);
         tokens_out.back().type = TOK_BINARY;
     } else {
         // Hex number.
@@ -239,19 +240,19 @@ void tokenize_line(
 
             // Check for hexadecimal
             if (line_in[pos] == LEX_HEXADECIMAL) {
-                pos = get_hex(tokens_out, line_in, DEBUG_POS);
+                pos = get_hex(tokens_out, line_in, ARGS_POS);
                 
             // Check for identifiers
             } else if (isalpha(line_in[pos])) {
-                pos = get_identifier(tokens_out, line_in, DEBUG_POS);
+                pos = get_identifier(tokens_out, line_in, ARGS_POS);
 
             // Check for numbers
             } else if (isdigit(line_in[pos]) || line_in[pos] == LEX_DECIMAL_POINT) {
-                pos = get_number(tokens_out, line_in, DEBUG_POS);
+                pos = get_number(tokens_out, line_in, ARGS_POS);
 
             // Check for strings
             } else if (line_in[pos] == LEX_QUOTE || line_in[pos] == LEX_APOSTROPHE) {
-                pos = get_string(tokens_out, line_in, DEBUG_POS);
+                pos = get_string(tokens_out, line_in, ARGS_POS);
 
             // Skips spaces
             } else if (line_in[pos] == LEX_SPACE) {
@@ -259,7 +260,7 @@ void tokenize_line(
 
             // Check for implemented symbols.                    
             } else {
-                pos = get_symbol(tokens_out, line_in, DEBUG_POS);
+                pos = get_symbol(tokens_out, line_in, ARGS_POS);
                 
             }
         }
@@ -274,7 +275,7 @@ bool tokenize_stream(
     std::istream& stream_in,
     const std::string filename
 ) {
-#ifdef DEBUG
+#ifdef DEBUG_LEXER
     std::cerr << std::endl << "LEXING " << filename;
 #endif
     bool success = true;
@@ -282,10 +283,32 @@ bool tokenize_stream(
 
     // Enter file scope
     TOK_ADD(TOK_SCOPE, filename, 0L, 0.0, true, false, filename, 0, 0);
+    bool raw = false;
+    std::string raw_code;
     for (std::string line; std::getline(stream_in, line); ) {
         try {
             if (!line.empty()) {
-                tokenize_line(tokens_out, line, filename, line_no);
+                // Check for start of RAW LLVM IR code
+                if (line == LEX_RAW_BEGIN) {
+                    if (raw) {
+                        throw std::domain_error("Trying to enter raw code multiple times");
+                    }
+                    raw = true;
+                } else if (raw) {
+                    // Check for end of RAW LLVM IR code
+                    if (line == LEX_RAW_END) {
+                        auto raw_pos = tokens_out.back().pos;
+                        TOK_ADD(TOK_RAW, raw_code, 1, 0.0, false, false, filename, line_no, raw_pos);
+                        raw_code = "";
+                        raw = false;
+                    } else {
+                        raw_code += line + "\n";
+                    }
+
+                // Otherwise, process as scandi code
+                } else {
+                    tokenize_line(tokens_out, line, filename, line_no);
+                }
             }
         } catch (std::domain_error& de) {
             std::cerr << "LEXER: " << filename << "@" << line_no << ": " << de.what() << std::endl;
@@ -299,8 +322,14 @@ bool tokenize_stream(
 
 
 std::ostream& operator<<(std::ostream& o, const Token& t) {
-    if (t.type == TOK_SCOPE) {
-        o << std::endl << std::string(t.pos, ' ');
+    if (t.type == TOK_RAW) {
+        o << std::endl << std::string(t.pos, ' ') << "RAW_BLOCK" << std::endl;
+    } else if (t.type == TOK_SCOPE) {
+        if (!t.s_val.empty()) {
+            o << std::endl << t.s_val;
+        } else {
+            o << std::endl << std::string(t.pos, ' ');
+        }
     } else {
         o << std::string(1, t.type) << (t.targets_self ? "!" : "") << (t.is_static ? "+" : "") << ".";
         switch (t.type) {

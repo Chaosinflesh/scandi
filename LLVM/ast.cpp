@@ -36,6 +36,10 @@ std::shared_ptr<ScopeAST> ScopeAST::add_member(
     if (member->depth > parent->depth) {
         if (is_declaration) {
             if (parent->has_member_visible(member->name)) {
+                std::cerr << std::endl << parent->name;
+                for (auto x: parent->members_by_name) {
+                    std::cerr << " " << x.first;
+                }
                 throw std::domain_error("Member " + member->name + " already defined for this scope!");
             }
             parent->members_by_name.emplace(member->name, member);
@@ -54,6 +58,7 @@ std::ostream& operator<<(std::ostream& os, const ScopeAST& ast) {
         os << std::endl << std::string(ast.depth, ' ');
     }
     switch(ast.type) {
+        case AST_RAW: os << dynamic_cast<const RawAST&>(ast); break;
         case AST_LABEL: os << dynamic_cast<const LabelAST&>(ast); break;
         case AST_VARIABLE: os << dynamic_cast<const VariableAST&>(ast); break;
         case AST_FUNCTION: os << dynamic_cast<const FunctionAST&>(ast); break;
@@ -68,12 +73,21 @@ std::ostream& operator<<(std::ostream& os, const ScopeAST& ast) {
         case AST_OPERATOR: os << dynamic_cast<const ExpressionAST&>(ast); break;
         case AST_REFERENCE: os << dynamic_cast<const ExpressionAST&>(ast); break;
         default:
-            //os << ast.name;
+            os << ast.name;
             break;
     }
     for (auto member: ast.members_by_order) {
         os << *member;
     }
+    return os;
+}
+
+
+/******************************************************************************
+ *                               RawAST                                       *
+ ******************************************************************************/
+std::ostream& operator<<(std::ostream& os, const RawAST& raw) {
+    os << "{{" << raw.name << std::endl << raw.code << "}}";
     return os;
 }
 

@@ -7,6 +7,7 @@
 * Stack-based : operators follow operands.
 * Keyword-less: declarations are operators
 * Indentation as scope.
+* Table-backed object store.
 
 ## Basic Elements
 
@@ -29,7 +30,7 @@
 | \(\) | *NULL* <br> Signifies no value. |
 | \#<value> | *Interpret as Hexadecimal* <br> This value is in hexadecimal. When applied to a string, the string becomes a binary blob. |
 | ( and ) | *Negate* <br> Negates the final result of the expression between the braces. |
-
+| \{]{ and \}\} | Embedded code (probably LLVM IR, tbd.) |
 
 ## Operators
 
@@ -78,3 +79,33 @@ Only basic elements can be compared like this, and they are compared by value.
 ## Grammar
 
 *TODO*
+
+## Memory Model
+
+*scandi*'s memory model consists of a table-based object store, and a working stack.
+items are copied onto the stack, and copied back for assignment.
+
+### Working Stack
+
+Instructions push and pop from the stack.
+The stack is cleared at the end of each line, regardless of state.
+
+### Objects Table
+
+The table-based object store starts from a root 'global' node, and variable, functions, etc. exist underneath this node.
+Each node consists of two contexts - static and non-static.
+Variables/functions exist within only one context - this is the difference between `$`,`@` and `$$`,`@@`.
+static variables and functions may be accessed from any context.
+static functions may only interact with static variables (plus their arguments, of course).
+
+### Memory Mapping
+
+This is determined by the ABI - *scandi* was intended to complement my 8-bit SIMD
+multi-core CPU, and the exact layout of MMIO etc. is context specific.
+*scandi* allows the mapping/dereferencing of objects to memory addresses, but not vice-versa.
+
+## Standard Library
+
+It is intended that *scandi* will ship with a small library enhancing its functionality via cstdlib.
+This will be through built-in system calls, and it is not intended at this stage to allow programmatic
+access elsewise (though this could be added as a stdlib feature in the future).

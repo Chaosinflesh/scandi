@@ -17,7 +17,7 @@
 
 
 EXP_PTR parse_expression(TOKEN_IT token, TOKEN_IT end, int depth) {
-#ifdef DEBUG
+#ifdef DEBUG_PARSER
     std::cerr << " ---EXPR> ";
     for (auto b = token; b != end; b++) {
         std::cerr << *b;
@@ -190,16 +190,31 @@ FN( parse_label ) {
     return ScopeAST::add_member(ast, a, true);
 }
 
+FN( parse_raw ) {
+    auto r = std::make_shared<RawAST>(
+        "raw_" + token->filename + "_" + std::to_string(token->line_no),
+        token->s_val,
+        token->pos
+    );
+
+    // Raw tokens get added to the previous token.
+    return ScopeAST::add_member(ast, r, false);
+}
+
 
 FN( parse_scope ) {
-#ifdef DEBUG
+#ifdef DEBUG_PARSER
     for (auto z = token; z < end; z++) {
         std::cerr << *z;
     }
 #endif
 
     // Determine what kind of scope we are looking at.
-    if ((token + 1)->type == TOK_ALIAS_BEGIN) {
+    if (!token->s_val.empty()) {
+        // This is a named scope.
+        ast = ScopeAST::add_member(ast, std::make_shared<ScopeAST>(token->s_val, token->l_val, true), true);
+        
+    } else if ((token + 1)->type == TOK_ALIAS_BEGIN) {
         ast = parse_alias(token, end, ast);
 
     // Function declarations are checked before variable declarations as
@@ -229,29 +244,39 @@ FN( parse_scope ) {
 
 
 AST_PTR parse_to_ast(std::vector<Token> tokens, AST_PTR ast) {
-#ifdef DEBUG
+#ifdef DEBUG_PARSER
     std::cerr << std::endl << "PARSING";
 #endif
     auto token = tokens.begin();
     auto end = tokens.end();
 
     while (token != end) {
-        if (token->type != TOK_SCOPE) {
+        // Unfortunately the tokenizer puts RAW before SCOPE.
+        if (token->type == TOK_RAW) {
+            ast = parse_raw(token, end, ast);
+            token++;
+            
+        } else if (token->type != TOK_SCOPE) {
             throw std::domain_error("Not yet processing token " + std::to_string(token->type));
             token++;
             
         } else {
             
-            // Find the end of the scope.
+            // Find the end of the scope. Need to account for named scopes (such
+            // as files!)
             auto scope_end = token + 1;
-            while (scope_end != end && scope_end->type != TOK_SCOPE) {
+            while (
+                scope_end != end
+             && (scope_end->type != TOK_SCOPE || !scope_end->s_val.empty())
+             && scope_end->type != TOK_RAW
+            ) {
                 scope_end++;
             }
             ast = parse_scope(token, scope_end, ast);
             token = scope_end;
         }
     }
-#ifdef DEBUG
+#ifdef DEBUG_PARSER
     std::cerr << std::endl;
 #endif
 

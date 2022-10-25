@@ -35,4 +35,3 @@ $line in readline =      ` Read in the command
 ` Output the results
 "Final floor: " floor + out writeline    ` Spec needs to flesh out string concatenation
 "Basement entered at move " b + out writeline
-

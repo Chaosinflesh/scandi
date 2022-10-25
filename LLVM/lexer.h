@@ -19,6 +19,8 @@
 #define LEX_FUNCTION_DECL     '@'
 #define LEX_FUNCTION_STATIC   "@@"
 
+#define LEX_RAW_BEGIN         "{{"
+#define LEX_RAW_END           "}}"
 #define LEX_ALIAS_BEGIN       '{'
 #define LEX_ALIAS_END         '}'
 
@@ -73,6 +75,7 @@ enum TokenType {
     TOK_BINARY            = 'B',  //  .. except a binary array!
     TOK_STRING            = 's',  // All values use a shared type
     TOK_OPERATOR          = 'O',  // Operators are really functions
+    TOK_RAW               = 'R'   // Raw code lines, passed into LLVM
 };
 
 
