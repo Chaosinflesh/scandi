@@ -28,8 +28,34 @@
 
 
 bool analyse_auto_assignments(AST_PTR ast) {
-    DEBUG( "TODO: Auto assignments."; )
-    return true;
+    if (ast->members_by_order.empty()) {
+        return true;
+    }
+    bool success = true;
+
+    // If this is an expression, probably need to factor in -> next, as well!
+    for (auto m : ast->members_by_order) {
+        if (m->type == AST_IDENTIFIER) {
+            auto start = std::dynamic_pointer_cast<ExpressionAST>(m);
+            auto end = start;
+            while (end->next) {
+                end = end->next;
+            }
+            if (end->type == AST_OPERATOR) {
+                auto op = std::dynamic_pointer_cast<OperatorAST>(end);
+                if (op->op != std::string(1, LEX_ASSIGNMENT)) {
+                    std::cout << std::endl << "Auto expanding: " << start->name << " " << op->op;
+                    auto new_start = std::make_shared<IdentifierAST>(start->name, start->depth);
+                    auto new_end = std::make_shared<OperatorAST>(std::string(1, LEX_ASSIGNMENT), false, end->depth);
+                    new_start->next = start->next;
+                    start->next = new_start;
+                    end->next = new_end;
+                }
+            }
+        }
+        success &= analyse_auto_assignments(m);
+    }
+    return success;
 }
 
 bool map_aliases(AST_PTR ast) {
