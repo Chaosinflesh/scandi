@@ -33,7 +33,7 @@ bool analyse_auto_assignments(AST_PTR ast) {
     }
     bool success = true;
 
-    // If this is an expression, probably need to factor in -> next, as well!
+    // Only outer expressions ending in non-assignment can be auto-assigned.
     for (auto m : ast->members_by_order) {
         if (m->type == AST_IDENTIFIER) {
             auto start = std::dynamic_pointer_cast<ExpressionAST>(m);
@@ -58,15 +58,6 @@ bool analyse_auto_assignments(AST_PTR ast) {
     return success;
 }
 
-bool map_aliases(AST_PTR ast) {
-    DEBUG( "TODO: Map aliases"; )
-    return true;
-}
-
-bool map_identifiers(AST_PTR ast) {
-    DEBUG( "TODO: Map identifiers."; )
-    return true;
-}
 
 bool connect_conditionals(AST_PTR ast) {
     if (ast->members_by_order.empty()) {
@@ -101,24 +92,11 @@ bool connect_conditionals(AST_PTR ast) {
     return success;
 }
 
-bool analyse_static_use(AST_PTR ast) {
-    DEBUG( "TODO: statics."; )
-    return true;
-}
-
-bool check_argument_counts(AST_PTR ast) {
-    DEBUG( "TODO: Auto assignments."; ) 
-    return true;
-}
 
 AST_PTR analyse_semantics(AST_PTR ast) {
     DEBUG( "ANALYSING SEMANTICS: TODO"; )
     bool success = true;
     success &= analyse_auto_assignments(ast);
-    success &= map_aliases(ast);
-    success &= map_identifiers(ast);
-    success &= analyse_static_use(ast);
-    success &= check_argument_counts(ast);
     success &= connect_conditionals(ast);
     DEBUG( ""; )
     if (!success) {
