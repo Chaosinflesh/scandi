@@ -10,10 +10,11 @@
 #include <iostream>
 #include <string>
 #include "ast.h"
+//#include "codegen.h"
 #include "globals.h"
 #include "lexer.h"
 #include "parser.h"
-#include "semantics.h"
+//#include "semantics.h"
 
 
 #define SCANDI_VERSION 0.1
@@ -49,7 +50,7 @@ void get_library_files() {
     if ((dir = opendir(lib_dir.c_str())) != NULL) {
         struct dirent *entry;
         while ((entry = readdir(dir)) != NULL) {
-            if (entry->d_type == DT_REG && std::string(entry->d_name).rfind(".scandi") != 0) {
+            if (entry->d_type == DT_REG && std::string(entry->d_name).rfind(".scandi") != std::string::npos) {
                 lib_files.push_back(lib_dir + entry->d_name);
             }
         }
@@ -61,7 +62,7 @@ void get_library_files() {
 
 
 int run() {
-    auto global = std::make_shared<ScopeAST>("global", -1, true);
+    auto global = SHARE(AST, AST_SCOPE, "global", -1, true);
 
     in_files.insert(in_files.begin(), lib_files.begin(), lib_files.end());
 
@@ -80,24 +81,23 @@ int run() {
         file.close();
 
         // 2. Parse
-        if (!parse_to_ast(tokens, global)) {
-            std::cerr << "PARSING FAILED" << std::endl;
-            return 1;
-        }
+        parse_to_ast(tokens, global);
     }
-    DEBUG( "After parsing:" << std::endl << *global << std::endl; )
+    DEBUG( "After parsing:" << std::endl << global << std::endl; )
 
     // 3. Semantic analysis
-    //    TODO: Add in stdlib here
-    global = analyse_semantics(global);
+    //analyse_semantics(global);
+    DEBUG( "After semantics:" << std::endl << global << std::endl; )
 
-    DEBUG( "After semantics:" << std::endl << *global << std::endl; )
+    // 4. Generate LLVM IR
+    //generate_code(global);
+    DEBUG( ""; )
 
     return 0;
 }
 
 
-int main(const int argc, const char* argv[]) {
+int main( int argc,  char* argv[]) {
 
     // Arguments accepted:
     // --version

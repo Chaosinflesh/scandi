@@ -1,4 +1,4 @@
-// Scandi: semantics.h
+// Scandi: codegen.h
 //
 // Author: Neil Bradley
 // Copyright: Neil Bradley
@@ -8,4 +8,4 @@
 #include "ast.h"
 
 
-void analyse_semantics(const ScopeAST&);
+void generate_code(const ScopeAST&);

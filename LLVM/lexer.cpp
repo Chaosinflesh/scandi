@@ -12,6 +12,9 @@
 #include "lexer.h"
 
 
+using std::domain_error;
+
+
 // Context-agnostic symbols
 std::vector<int> operators {
     LEX_REFERENCE_END,
@@ -35,12 +38,12 @@ std::vector<int> operators {
 };
 
 
-const bool Token::is_assignment() const {
+ bool Token::is_assignment()  {
     return this->type == TOK_OPERATOR && this->s_val == std::string(1, LEX_ASSIGNMENT);
 }
 
 
-const bool Token::is_conditional() const {
+ bool Token::is_conditional()  {
     return this->type == TOK_OPERATOR && (
         this->s_val == std::string(1, LEX_EQ)
      || this->s_val == std::string(1, LEX_GT)
@@ -50,7 +53,7 @@ const bool Token::is_conditional() const {
     );
 }
 
-#define FN( NAME )      size_t NAME (std::vector<Token>& tokens_out, const std::string line_in, const std::string filename, const int line_no, size_t pos)
+#define FN( NAME )      size_t NAME (std::vector<Token>& tokens_out,  std::string line_in,  std::string filename,  int line_no, size_t pos)
 #define INIT_POS        auto init_pos = pos
 #define ARGS_POS       filename, line_no, pos
 #define DEBUG_POS       filename, line_no, (pos + 1)
@@ -93,7 +96,7 @@ FN( get_number ) {
         if (line_in[pos] == LEX_DECIMAL_POINT) {
             // Oops. malformed number!
             if (decimal_seen) {
-                throw std::domain_error("Extraneous decimal point");
+                throw domain_error("Extraneous decimal point");
             } else {
                 decimal_seen = true;
             }
@@ -146,7 +149,7 @@ FN( get_hex ) {
     pos++;
 
     if (pos == line_in.size()) {
-        throw std::domain_error("Reached end of line on hexadecimal");
+        throw domain_error("Reached end of line on hexadecimal");
     }
     if (line_in[pos] == LEX_QUOTE || line_in[pos] == LEX_APOSTROPHE) {
         // Binary blob.
@@ -174,6 +177,10 @@ FN( get_hex ) {
 #define RETURN_POS_INC                  return ++pos
 #define RETURN_POS_INC2                 return pos + 2
 
+// Raw code variables
+int raw_level = -1;
+std::string raw_code;
+
 FN( get_symbol ) {
     std::string local = line_in.substr(pos);
     bool in_context = (pos > 0 && line_in[pos - 1] != LEX_SPACE && line_in[pos - 1] != LEX_ALIAS_BEGIN);
@@ -186,6 +193,7 @@ FN( get_symbol ) {
     ALSO_CONSIDERING_CHAR(LEX_REFERENCE_BEGIN)      TOK_ADD(TOK_OPERATOR, LEX_REFERENCE_BEGIN, 0L, 0.0, false, !in_context, DEBUG_POS);     RETURN_POS_INC;
 
     // Context-less lexes: digraphs.
+    ALSO_CONSIDERING_STRING(LEX_RAW_BEGIN)          raw_level = pos;                                                                        RETURN_POS_INC2;
     ALSO_CONSIDERING_STRING(LEX_VARIABLE_STATIC)    TOK_ADD(TOK_VARIABLE, "", 0L, 0.0, true, false, DEBUG_POS);                             RETURN_POS_INC2;
     ALSO_CONSIDERING_STRING(LEX_FUNCTION_STATIC)    TOK_ADD(TOK_FUNCTION, "", 0L, 0.0, true, false, DEBUG_POS);                             RETURN_POS_INC2;
     ALSO_CONSIDERING_STRING(LEX_NULL)               TOK_ADD(TOK_VALUE, LEX_NULL, 0L, 0.0, true, false, DEBUG_POS);                          RETURN_POS_INC2;
@@ -210,15 +218,15 @@ FN( get_symbol ) {
     }
 
     // If we get here, there was a problem!
-    throw std::domain_error("Unknown symbol");
+    throw domain_error("Unknown symbol");
 }
 
 
 void tokenize_line(
     std::vector<Token>& tokens_out,
-    const std::string line_in,
-    const std::string filename,
-    const int line_no
+     std::string line_in,
+     std::string filename,
+     int line_no
 ) {
     size_t pos = 0;
 
@@ -265,8 +273,8 @@ void tokenize_line(
                 
             }
         }
-    } catch (const std::domain_error& de) {
-        throw std::domain_error(std::to_string(pos) + ": " + de.what());
+    } catch ( domain_error& de) {
+        throw domain_error(std::to_string(pos) + ": " + de.what());
     }
 }
 
@@ -274,7 +282,7 @@ void tokenize_line(
 bool tokenize_stream(
     std::vector<Token>& tokens_out,
     std::istream& stream_in,
-    const std::string filename
+     std::string filename
 ) {
     DEBUG ( "LEXING " << filename; )
     bool success = true;
@@ -282,24 +290,16 @@ bool tokenize_stream(
 
     // Enter file scope
     TOK_ADD(TOK_SCOPE, filename, 0L, 0.0, true, false, filename, 0, 0);
-    bool raw = false;
-    std::string raw_code;
     for (std::string line; std::getline(stream_in, line); ) {
         try {
             if (!line.empty()) {
                 // Check for start of RAW LLVM IR code
-                if (line == LEX_RAW_BEGIN) {
-                    if (raw) {
-                        throw std::domain_error("Trying to enter raw code multiple times");
-                    }
-                    raw = true;
-                } else if (raw) {
+                if (raw_level >= 0) {
                     // Check for end of RAW LLVM IR code
                     if (line == LEX_RAW_END) {
-                        auto raw_pos = tokens_out.back().pos;
-                        TOK_ADD(TOK_RAW, raw_code, 1, 0.0, false, false, filename, line_no, raw_pos);
+                        TOK_ADD(TOK_RAW, raw_code, 1, 0.0, false, false, filename, line_no, raw_level);
                         raw_code = "";
-                        raw = false;
+                        raw_level = -1;
                     } else {
                         raw_code += line + "\n";
                     }
@@ -309,7 +309,7 @@ bool tokenize_stream(
                     tokenize_line(tokens_out, line, filename, line_no);
                 }
             }
-        } catch (std::domain_error& de) {
+        } catch (domain_error& de) {
             std::cerr << "LEXER: " << filename << "@" << line_no << ": " << de.what() << std::endl;
             success = false;
         }
@@ -320,7 +320,7 @@ bool tokenize_stream(
 }
 
 
-std::ostream& operator<<(std::ostream& o, const Token& t) {
+std::ostream& operator<<(std::ostream& o,  Token& t) {
     if (t.type == TOK_RAW) {
         o << std::endl << std::string(t.pos, ' ') << "RAW_BLOCK" << std::endl;
     } else if (t.type == TOK_SCOPE) {

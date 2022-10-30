@@ -1,0 +1,20 @@
+` Author: Neil Bradley
+` Copyright: Neil Bradley
+` License: GPL 3.0
+
+` Splits the provided string on a single char delimiter.
+$str $delim @@split
+    $data
+    $i 0 =
+    $p 0 =
+    $s "" =
+    \loop
+        p str! ?
+            split data =
+        str[p] delim ?
+            data[i] s =
+            s "" =
+        :
+            s str[p] +
+        p 1 +
+        loop

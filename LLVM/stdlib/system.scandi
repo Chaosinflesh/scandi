@@ -3,16 +3,16 @@
 ` License: GPL 3.0
 
 $$stdout
-{{
+    {{
     // C++ code goes here.
 }}
 
 $$stdin
-{{
+    {{
     // C++ code goes here.
 }}
 
 $$stderr
-{{
+    {{
     // C++ code goes here.
 }}

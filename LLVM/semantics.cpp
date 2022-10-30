@@ -43,8 +43,8 @@ bool analyse_auto_assignments(AST_PTR ast) {
             }
             if (end->type == AST_OPERATOR) {
                 auto op = std::dynamic_pointer_cast<OperatorAST>(end);
-                if (op->op != std::string(1, LEX_ASSIGNMENT)) {
-                    std::cout << std::endl << "Auto expanding: " << start->name << " " << op->op;
+                if (op->name != std::string(1, LEX_ASSIGNMENT)) {
+                    std::cout << std::endl << "Auto expanding: " << start->name << " " << op->name;
                     auto new_start = std::make_shared<IdentifierAST>(start->name, start->depth);
                     auto new_end = std::make_shared<OperatorAST>(std::string(1, LEX_ASSIGNMENT), false, end->depth);
                     new_start->next = start->next;
@@ -93,14 +93,66 @@ bool connect_conditionals(AST_PTR ast) {
 }
 
 
+void connect_labels(AST_PTR ast, int d, bool known) {
+    if (!ast) {
+        return;
+    }
+    DEBUG( std::string(d, ' ') << AST_PTR_INFO( ast ) << ast->name << (known ? " YES" : ""); )
+
+    switch (ast->type) {
+        // Expressions
+        case AST_CONDITIONAL:
+        case AST_ALIAS:
+        case AST_EXPRESSION:
+        case AST_IDENTIFIER:
+        case AST_BINARY:
+        case AST_STRING:
+        case AST_LONG:
+        case AST_DOUBLE:
+        case AST_NULL:
+        case AST_REFERENCE:
+        case AST_OPERATOR: {
+                auto e = std::dynamic_pointer_cast<ExpressionAST>(ast);
+                // TODO: handle References' expression.
+                if (ast->type == AST_CONDITIONAL) {
+                    DEBUG( std::string(d, ' ') << "CONDITION:"; )
+                }
+                if (e->next){
+                    connect_labels(e->next, d + 1, ast->has_member_visible(e->name));
+                }
+            }
+            break;
+
+        default: /* Already done above */ break;
+    }
+
+    if (ast->type == AST_CONDITIONAL) {
+        DEBUG( std::string(d, ' ') << "TRUE"; )
+    }
+    // Applicable for all types.
+    for (auto m: ast->members_by_order) {
+        connect_labels(m, d + 2, ast->has_member_visible(m->name));
+    }
+    if (ast->type == AST_CONDITIONAL) {
+        DEBUG( std::string(d, ' ') << "FALSE"; )
+        auto c = std::dynamic_pointer_cast<ConditionalAST>(ast);
+        if (c->when_false) {
+            connect_labels(c->when_false, d + 2, ast->has_member_visible(c->when_false->name)); 
+        }
+        DEBUG( std::string(d, ' ') << "AFTER"; )
+    }
+}
+
+
 AST_PTR analyse_semantics(AST_PTR ast) {
     DEBUG( "ANALYSING SEMANTICS: TODO"; )
     bool success = true;
+    connect_labels(ast, 0, false);
     success &= analyse_auto_assignments(ast);
     success &= connect_conditionals(ast);
     DEBUG( ""; )
     if (!success) {
-        throw std::domain_error("Semantic errors occured, please check the log");
+        throw domain_error("Semantic errors occured, please check the log");
     }
     return ast;
 }

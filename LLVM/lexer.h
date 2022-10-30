@@ -140,15 +140,15 @@ class Token {
         {}
 
 
-        const bool is_assignment() const;
-        const bool is_conditional() const;
+         bool is_assignment() ;
+         bool is_conditional() ;
 
 };
-std::ostream& operator<<(std::ostream& outStream, const Token& token);
+std::ostream& operator<<(std::ostream&,  Token& token);
 
 
 bool tokenize_stream(
     std::vector<Token>& tokens_out,
     std::istream& stream_in,
-    const std::string filename
+     std::string filename
 );

@@ -2,14 +2,14 @@
 ` Copyright: Neil Bradley
 ` License: GPL 3.0
 
-[] $in @@readline
+$in @@readline
     $data
-{{
+    {{
     // C++ code goes here.
 }}
     readline data =
 
 [] $out @@writeline
-{{
+    {{
     // C++ code goes here.
 }}
