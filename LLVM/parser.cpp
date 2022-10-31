@@ -27,7 +27,20 @@ FN( parse_expression ) {
             std::cerr << *b;
         }
     }
+    // Check for auto-assignment
+    bool is_auto_assign = (
+        token->type == TOK_IDENTIFIER
+     && (end - 1)->type == TOK_OPERATOR
+     && (end - 1)->s_val != CHAR_STR(LEX_ASSIGNMENT)
+    );
+    
     // This will start off as a nullptr, declaring for typing.
+    if (is_auto_assign) {
+        auto first = SHARE(AST, AST_IDENTIFIER, token->s_val, parent->depth, false);
+        first->parent = parent;
+        parent->next = std::move(first);
+    }
+    
     auto next = parent->next;
     auto item = parent->next;
 
@@ -71,6 +84,7 @@ FN( parse_expression ) {
         }
 
         // Apply the next item.
+        item->parent = parent;
         if (token->targets_self) {
             item->set_property(AST::OPT_TARGETS_SELF);
         }
@@ -85,11 +99,18 @@ FN( parse_expression ) {
         // If we need to add a sub-expression. Gets added to ->alt so as to not pollute ->next space.
         if (ref_end != token) {
             auto exp = SHARE(AST, AST_REFERENCE, "ref_" + std::to_string(token->pos), parent->depth, false);
+            exp->parent = parent;
             next->alt = std::move(exp);
             parse_expression(token + 1, ref_end, next->alt);
             token = ref_end;
         }
         token++;
+    }
+
+    if (is_auto_assign) {
+        auto last = SHARE(AST, AST_OPERATOR, CHAR_STR(LEX_ASSIGNMENT), parent->depth, false);
+        last->parent = parent;
+        next->next = std::move(last);
     }
 
     return parent;
@@ -112,6 +133,7 @@ FN( parse_conditional) {
 
 // An alias is effectively a named expression.
 FN( parse_alias ) {
+    DEBUG("TODO: currently there is a bug when alias has the same name as target";)
     if (end - token < 5) {
         throw domain_error("Malformed alias statement");
     }
@@ -195,11 +217,18 @@ FN( parse_variable ) {
 
 
 FN( parse_else ) {
-    // Elses are generated jump targets.
+    // Elses are generated jump targets. Parents for elses are the previous conditional.
     auto a = SHARE(AST, AST_LABEL, "auto_else_" + std::to_string(token->line_no), token->l_val, false);
-    parent = AST::get_correct_parent(a, parent);
+    parent = AST::get_correct_parent(a, parent)->children.back();
+    if (!parent || parent->type != AST_CONDITIONAL) {
+        DERR("Else without condition.");
+    }
+    if (parent->alt) {
+        DERR("Extraneious else on condition.");
+    }
     a->parent = parent;
-    parent->children.push_back(std::move(a));
+    parent->alt = std::move(a);
+    parent = parent->alt;
     return parent;
 }
 

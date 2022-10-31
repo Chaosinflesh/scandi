@@ -14,7 +14,7 @@
 #include "globals.h"
 #include "lexer.h"
 #include "parser.h"
-//#include "semantics.h"
+#include "semantics.h"
 
 
 #define SCANDI_VERSION 0.1
@@ -86,7 +86,7 @@ int run() {
     DEBUG( "After parsing:" << std::endl << global << std::endl; )
 
     // 3. Semantic analysis
-    //analyse_semantics(global);
+    analyse_semantics(global);
     DEBUG( "After semantics:" << std::endl << global << std::endl; )
 
     // 4. Generate LLVM IR

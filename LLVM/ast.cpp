@@ -33,7 +33,8 @@ bool AST::can_see(const string name) {
     } else if (parent) {
         return parent->can_see(name);
     }
-    return false;
+    // Only really applies at the global scope.
+    return (this->name == name);
 }
 
 
@@ -42,6 +43,14 @@ SHARED(AST) AST::get_member(const string name) {
         if (c->name == name) {
             return c;
         }
+    }
+    // Account for named parameters also.
+    auto n = next;
+    while (n) {
+        if (n->type == AST_VARIABLE && n->name == name) {
+            return n;
+        }
+        n = n->next;
     }
     if (parent) {
         return parent->get_member(name);
@@ -75,6 +84,12 @@ const string AST::shorthand() const {
     } else if (type == AST_DOUBLE) {
         vis = std::to_string(numeric_value.d);
     }
+    if (type == AST_IDENTIFIER) {
+        vis += "->";
+        if (alt) {
+            vis += alt->shorthand();
+        }
+    }
     return CHAR_STR(type) + std::to_string(properties) + "." + vis;
 }
 
@@ -95,7 +110,6 @@ ostream& operator<<(ostream& os,  const SHARED(AST)& ast) {
         os << ast->next;
     }
     if (!ast->children.empty()) {
-        // TODO: Name the parts.
         for (auto c: ast->children) {
             os << c;
         }

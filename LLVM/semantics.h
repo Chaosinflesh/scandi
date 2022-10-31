@@ -6,6 +6,7 @@
 
 #pragma once
 #include "ast.h"
+#include "globals.h"
 
 
-void analyse_semantics(const ScopeAST&);
+void analyse_semantics(SHARED(AST));
