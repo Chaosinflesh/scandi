@@ -13,76 +13,101 @@
  *  should take, as it encounters each AST object.
  */
 
-void gen_scope(AST_PTR ast) {
-    DEBUG( "NEW SCOPE " << ast->name; )
+#define OFFSET( level ) string(level < 0 ? 0 : level, ' ')
+
+void gen_scope(SHARED(AST) ast) {
+    DEBUG( OFFSET(ast->depth) << "NEW SCOPE " << ast->name; )
     // Add all the members recursively.
-    for (auto m: ast->members_by_order) {
-        generate_code(m);
+    for (auto c: ast->children) {
+        generate_code(c);
     }
-    DEBUG( "EXIT SCOPE " << ast->name << std::endl; )
+    DEBUG( OFFSET(ast->depth) << "EXIT SCOPE " << ast->name << endl; )
 }
 
 
-void gen_raw(AST_PTR ast) {
-    DEBUG( "<<< INJECT RAW LLVM IR >>>"; )
+void gen_raw(SHARED(AST) ast) {
+    DEBUG( OFFSET(ast->depth) << "<<< INJECT RAW LLVM IR >>>"; )
 }
 
 
-void gen_label(AST_PTR ast) {
-    DEBUG( "ADD LABEL " << ast->name; )
-    for (auto m: ast->members_by_order) {
-        generate_code(m);
+void gen_label(SHARED(AST) ast) {
+    DEBUG( OFFSET(ast->depth) << "ADD LABEL " << ast->name; )
+    for (auto c: ast->children) {
+        generate_code(c);
     }
 }
 
 
-void gen_variable(AST_PTR ast) {
-    bool is_class = !ast->members_by_order.empty();
-    DEBUG( "ADD " << (ast->is_static ? "STATIC " : "") << (is_class ? "CLASS " : "VARIABLE ") << ast->name; )
+void gen_variable(SHARED(AST) ast) {
+    bool is_class = !ast->children.empty();
+    DEBUG( OFFSET(ast->depth) << "ADD " << (ast->get_property(AST::OPT_STATIC) ? "STATIC " : "") << (is_class ? "CLASS " : "VARIABLE ") << ast->name; )
     if (is_class) {
-        for (auto m: ast->members_by_order) {
-            generate_code(m);
+        for (auto c: ast->children) {
+            generate_code(c);
         }
-        DEBUG( "END CLASS " << ast->name; )
+        DEBUG( OFFSET(ast->depth) << "END CLASS " << ast->name << endl; )
     }
 }
 
 
-void gen_expression(AST_PTR ast) {
-    DEBUG( "TODO: GEN_EXPRESSION"; )
-    for (auto m: ast->members_by_order) {
-        generate_code(m);
+void gen_expression(SHARED(AST) ast) {
+    DEBUG( OFFSET(ast->depth) << "ADD EXPRESSION " << ast->name; )
+    auto current = ast;
+    // Skip place-holder.
+    if (current->type == AST_EXPRESSION) {
+        current = current->next;
     }
+    DEBUG( OFFSET(ast->depth) << " =============== TODO ====================== "; )
+    DEBUG( OFFSET(ast->depth) << "END EXPRESSION " << ast->name; )
 }
 
 
-void gen_function(AST_PTR ast) {
-    auto func = std::dynamic_pointer_cast<FunctionAST>(ast);
-    DEBUG( "BEGIN " << (func->is_static ? "STATIC" : "") << " FUNCTION " << func->name; )
-    for (auto p: func->parameters_by_order) {
-        DEBUG( "ADD PARAMETER " << p; )
+void gen_function(SHARED(AST) ast) {
+    DEBUG( OFFSET(ast->depth) << "ADD " << (ast->get_property(AST::OPT_STATIC) ? "STATIC " : "") << "FUNCTION " << ast->name; )
+    // Parameters
+    auto next = ast->next;
+    while (next) {
+        DEBUG( OFFSET(ast->depth) << "ADD PARAMETER " << next->name; )
+        next = next->next;
     }
-    if (func->takes_varargs) {
-        DEBUG( "ADD VARARGS"; )
+    if (ast->get_property(AST::OPT_HAS_VARARGS)) {
+        DEBUG( OFFSET(ast->depth) << "ADD VARARGS"; )
     }
-    for (auto m: func->members_by_order) {
-        generate_code(m);
+    for (auto c: ast->children) {
+        generate_code(c);
     }
-    DEBUG( "END FUNCTION " << func->name << std::endl; )
+    DEBUG( OFFSET(ast->depth) << "END FUNCTION " << ast->name << endl; )
 }
 
 
-void gen_alias(AST_PTR ast) {
-    DEBUG( "TODO: GEN_ALIAS"; )
+void gen_alias(SHARED(AST) ast) {
+    DEBUG( OFFSET(ast->depth) << "ADD INLINE FUNCTION " << ast->name; )
+    generate_code(ast->next);
+    DEBUG( OFFSET(ast->depth) << "END INLINE FUNCTION " << ast->name; )
 }
 
 
-void gen_conditional(AST_PTR ast) {
-    DEBUG( "TODO: GEN_CONDITIONAL"; )
+void gen_conditional(SHARED(AST) ast) {
+    DEBUG( OFFSET(ast->depth) << "ADD CONDITIONAL " << ast->name; )
+    DEBUG( OFFSET(ast->depth) << "IF..."; )
+    generate_code(ast->next);
+    DEBUG( OFFSET(ast->depth) << "THEN..."; )
+    for (auto c: ast->children) {
+        generate_code(ast->next);
+    }
+    if (ast->alt) {
+        DEBUG( OFFSET(ast->depth) << "ELSE..."; )
+        // Skip the auto-label
+        for (auto e: ast->alt->children) {
+            generate_code(e);
+        }
+        //generate_code(ast->alt);
+    }
+    DEBUG( OFFSET(ast->depth) << "END CONDITIONAL " << ast->name; )
 }
 
 
-void generate_code(AST_PTR ast) {
+void generate_code(SHARED(AST) ast) {
     // The action we take here depend on what type of AST we are dealing with.
     switch (ast->type) {
         case AST_SCOPE:         gen_scope(ast);        break;
@@ -107,6 +132,6 @@ void generate_code(AST_PTR ast) {
         case AST_OPERATOR:      gen_expression(ast);   break;
 
         // Uh oh.
-        default: throw domain_error("Unknown AST. This is probably a bug.");
+        default: DERR("Unknown AST. This is probably a bug.");
     }
 }

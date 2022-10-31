@@ -209,9 +209,9 @@ FN( parse_variable ) {
         auto e = SHARE(AST, AST_EXPRESSION, e_name, token->l_val, false);
         e->parent = parent;
         parent->children.push_back(std::move(e));
-        parent = parse_expression(token + 1, end, parent->get_member(e_name));
+        return parse_expression(token + 1, end, parent->get_member(e_name));
     }
-    return parent;
+    return parent->children.back();
 }
 
 

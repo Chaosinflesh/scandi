@@ -10,7 +10,7 @@
 #include <iostream>
 #include <string>
 #include "ast.h"
-//#include "codegen.h"
+#include "codegen.h"
 #include "globals.h"
 #include "lexer.h"
 #include "parser.h"
@@ -90,7 +90,7 @@ int run() {
     DEBUG( "After semantics:" << std::endl << global << std::endl; )
 
     // 4. Generate LLVM IR
-    //generate_code(global);
+    generate_code(global);
     DEBUG( ""; )
 
     return 0;

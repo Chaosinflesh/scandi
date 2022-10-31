@@ -6,6 +6,7 @@
 
 #pragma once
 #include "ast.h"
+#include "globals.h"
 
 
-void generate_code(const ScopeAST&);
+void generate_code(SHARED(AST));
