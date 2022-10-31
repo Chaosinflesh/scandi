@@ -133,7 +133,6 @@ FN( parse_conditional) {
 
 // An alias is effectively a named expression.
 FN( parse_alias ) {
-    DEBUG("TODO: currently there is a bug when alias has the same name as target";)
     if (end - token < 5) {
         throw domain_error("Malformed alias statement");
     }
@@ -279,6 +278,7 @@ FN( parse_scope ) {
         parent = AST::get_correct_parent(s, parent);
         s->parent = parent;
         parent->children.push_back(std::move(s));
+        parent = parent->children.back();
         
     } else if ((token + 1)->type == TOK_ALIAS_BEGIN) {
         parent = parse_alias(token, end, parent);

@@ -27,11 +27,9 @@ void check_for_global_access(const SHARED(AST) ast, const SHARED(AST) global) {
     }
     // Check each member.
     if (ast->next) {
-        DEBUG(" NEXT ";)
         check_for_global_access(ast->next, global);
     }
     if (ast->alt) {
-        DEBUG(" ALT ";)
         check_for_global_access(ast->alt, global);
     }
     for (auto c: ast->children) {
@@ -44,19 +42,17 @@ void link_identifiers(SHARED(AST) ast) {
     if (ast->type == AST_IDENTIFIER) {
         DEBUG("LOOKING FOR " << ast->name;)
         auto link = ast->get_member(ast->name);
-        if (link) {
+        if (link && !(link->type == AST_ALIAS && link == ast->parent)) {  // Don't link an alias to itself.
             ast->alt = link;
         } else {
-            DERR("Could not find member " + ast->name);
+            // It is acceptable not to find a member, as they may be calculated at runtime.
         }
     }
     // Check each member.
     if (ast->next) {
-        DEBUG(" NEXT ";)
         link_identifiers(ast->next);
     }
     if (ast->type != AST_IDENTIFIER && ast->alt) {
-        DEBUG(" ALT ";)
         link_identifiers(ast->alt);
     }
     for (auto c: ast->children) {
@@ -68,6 +64,6 @@ void link_identifiers(SHARED(AST) ast) {
 void analyse_semantics(SHARED(AST) ast) {
     DEBUG("CHECKING GLOBAL ACCESS CONSISTENCY (note this is for compiler debugging)";)
     check_for_global_access(ast, ast);
-    DEBUG("LINKING IDENTIFIERS";)
+    DEBUG(endl << "LINKING IDENTIFIERS";)
     link_identifiers(ast);
 }

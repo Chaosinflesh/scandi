@@ -16,12 +16,14 @@ bool AST::has_member(const string name) {
     }
 
     // Account for named parameters also.
-    auto n = next;
-    while (n) {
-        if (n->type == AST_VARIABLE && n->name == name) {
-            return true;
+    if (type == AST_FUNCTION) {
+        auto n = next;
+        while (n) {
+            if (n->type == AST_VARIABLE && n->name == name) {
+                return true;
+            }
+            n = n->next;
         }
-        n = n->next;
     }
     return false;
 }
@@ -45,12 +47,14 @@ SHARED(AST) AST::get_member(const string name) {
         }
     }
     // Account for named parameters also.
-    auto n = next;
-    while (n) {
-        if (n->type == AST_VARIABLE && n->name == name) {
-            return n;
+    if (type == AST_FUNCTION) {
+        auto n = next;
+        while (n) {
+            if (n->type == AST_VARIABLE && n->name == name) {
+                return n;
+            }
+            n = n->next;
         }
-        n = n->next;
     }
     if (parent) {
         return parent->get_member(name);
