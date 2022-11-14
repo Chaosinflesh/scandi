@@ -102,7 +102,7 @@ static functions may only interact with static variables (plus their arguments, 
 
 This is determined by the ABI - *scandi* was intended to complement my 8-bit SIMD
 multi-core CPU, and the exact layout of MMIO etc. is context specific.
-*scandi* allows the mapping/dereferencing of objects to memory addresses, but not vice-versa.
+*scandi* allows the mapping/dereferencing of objects to memory addresses.
 
 ## Standard Library
 

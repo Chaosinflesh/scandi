@@ -9,6 +9,43 @@ The aim of the language is to have no 'keywords' -> though I will note the use o
 
 *scandi* uses a table-backed memory management system.
 
-*scandi* provides a small standard library to work with - though currently it is a WIP.
+*scandi* provides a small standard library to work with (WIP).
 
-The long term goal is to use [LLVM](https://llvm.org) to build a compiler, however in the meantime I will be starting with an interpreter to check language features.
+This project is using [LLVM](https://llvm.org) to build a compiler.
+
+## Example Program (Fibonacci Sequence):
+
+```
+` fibonacci.scandi
+
+{stream.writeline writeline}
+{system.stdout out}
+
+` Calculates the n-th fibonacci value, given two starting values.
+$a $b $n @fibonacci
+
+   n 1 <
+      "Error: this example is unable to calculate a negative fibonacci index." out writeline
+      fibonacci 0 =
+
+   n 1 ?
+      fibonacci a =
+
+   $pos 2 =
+   $sum a b + =
+
+   \loop
+      pos n ?
+         fibonacci sum =
+      sum a b + =
+      a b =
+      b sum =
+      pos 1 +
+      loop
+
+
+` Calculate the 12th fibonacci number
+$result 0 1 12 fibonacci =
+"The 12th fibonnacci number is " result + out writeline
+
+```
