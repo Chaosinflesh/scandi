@@ -66,4 +66,5 @@ void analyse_semantics(SHARED(AST) ast) {
     check_for_global_access(ast, ast);
     DEBUG(endl << "LINKING IDENTIFIERS";)
     link_identifiers(ast);
+    DEBUG(endl << "TODO: DOT AND REFERENCE OPERATOR REORDERING";)
 }

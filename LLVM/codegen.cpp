@@ -50,15 +50,52 @@ void gen_variable(SHARED(AST) ast) {
 }
 
 
+void gen_operator(SHARED(AST) op) {
+    string action = "TODO: OP " + op->name;
+    if        (op->name == "=") { action = "  POP VALUE INTO NEXT POP (TODO: differentiate between var and function)";
+    } else if (op->name == "+") { action = "  POP POP ADD PUSH";
+    } else if (op->name == "-") { action = "  POP1 POP2 POP2-POP1 PUSH";
+    } else if (op->name == "*") { action = "  POP POP MULTIPLY PUSH";
+    } else if (op->name == "/") { action = "  POP1 POP2 POP2/POP1 PUSH";
+    } else if (op->name == "%") { action = "  POP1 POP2 POP2%POP1 PUSH";
+    } else if (op->name == "&") { action = "  POP POP AND PUSH";
+    } else if (op->name == "|") { action = "  POP POP OR PUSH";
+    } else if (op->name == "^") { action = "  POP POP XOR PUSH";
+    } else if (op->name == "!") { action = "  POP COUNT PUSH";
+    } else if (op->name == "?") { action = "  POP POP COMPARE_EQUAL PUSH";
+    } else if (op->name == "<") { action = "  POP POP COMPARE_LESS_THAN PUSH";
+    } else if (op->name == "?<"){ action = "  POP POP COMPARE_LESS_THAN_EQUAL PUSH";
+    } else if (op->name == ">") { action = "  POP POP COMPARE_GREATER_THAN PUSH";
+    } else if (op->name == "?>"){ action = "  POP POP COMPARE_GREATER_THAN_EQUAL PUSH";
+    }
+    DEBUG( OFFSET(op->depth) << action; )
+}
+
+
 void gen_expression(SHARED(AST) ast) {
-    DEBUG( OFFSET(ast->depth) << "ADD EXPRESSION " << ast->name; )
     auto current = ast;
     // Skip place-holder.
     if (current->type == AST_EXPRESSION) {
         current = current->next;
     }
-    DEBUG( OFFSET(ast->depth) << " =============== TODO ====================== "; )
-    DEBUG( OFFSET(ast->depth) << "END EXPRESSION " << ast->name; )
+    DEBUG( OFFSET(current->depth) << " INIT EXPRESSION STACK"; )
+    while (current) {
+        switch (current->type) {
+            case AST_EXPRESSION:    gen_expression(current->alt);                                       break;
+            case AST_IDENTIFIER:
+            case AST_BINARY:
+            case AST_STRING:        DEBUG( OFFSET(current->depth) << "  PUSH " << current->name << " ONTO EXPRESSION STACK"; )     break;
+            case AST_LONG:          DEBUG( OFFSET(current->depth) << "  PUSH " << current->numeric_value.l << " ONTO EXPRESSION STACK"; )     break;
+            case AST_DOUBLE:        DEBUG( OFFSET(current->depth) << "  PUSH " << current->numeric_value.d << " ONTO EXPRESSION STACK"; )     break;
+            case AST_NULL:          DEBUG( OFFSET(current->depth) << "  PUSH NULL ONTO EXPRESSION STACK"; )     break;
+            case AST_REFERENCE:     DEBUG( OFFSET(current->depth) << "  TODO: REF " << current->name; )     break;
+            case AST_OPERATOR:      gen_operator(current); break;
+            default:
+                DERR("Unknown EXPRESSION. This is probably a bug.");
+        }
+        current = current->next;
+    }
+    DEBUG( OFFSET(ast->depth) << " PUSH EXPRESSION STACK IF PARENT STACK"; )
 }
 
 
