@@ -62,9 +62,8 @@ void link_identifiers(SHARED(AST) ast) {
 
 
 void analyse_semantics(SHARED(AST) ast) {
-    DEBUG("CHECKING GLOBAL ACCESS CONSISTENCY (note this is for compiler debugging)";)
+    DEBUG(endl << "CHECKING GLOBAL ACCESS CONSISTENCY (note this is for compiler debugging)";)
     check_for_global_access(ast, ast);
     DEBUG(endl << "LINKING IDENTIFIERS";)
     link_identifiers(ast);
-    DEBUG(endl << "TODO: DOT AND REFERENCE OPERATOR REORDERING";)
 }

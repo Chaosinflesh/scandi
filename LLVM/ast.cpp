@@ -98,17 +98,18 @@ const string AST::shorthand() const {
 }
 
 
-ostream& operator<<(ostream& os,  const SHARED(AST)& ast) {
+ostream& line_stream(ostream& os,  const SHARED(AST)& ast, bool new_line) {
     if (ast->type < 'a') {
-        if (ast->depth >= 0) {
+        if (ast->depth >= 0 && new_line) {
             os << endl << string(ast->depth, ' ') << ast->shorthand();
         }
     } else {
         os << " " << ast->shorthand();
     }
-    // This is for references.
-    if (ast->type == AST_OPERATOR && ast->alt) {
-        os << "[( " << ast->alt << " )]";
+    if (ast->type == AST_REFERENCE && ast->alt) {
+        os << "[( ";
+        line_stream(os, ast->alt, false);
+        os << " )]";
     }
     if (ast->next) {
         os << ast->next;
@@ -125,3 +126,6 @@ ostream& operator<<(ostream& os,  const SHARED(AST)& ast) {
 }
 
 
+ostream& operator<<(ostream& os,  const SHARED(AST)& ast) {
+    return line_stream(os, ast, true);
+}

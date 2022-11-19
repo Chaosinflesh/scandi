@@ -52,21 +52,24 @@ void gen_variable(SHARED(AST) ast) {
 
 void gen_operator(SHARED(AST) op) {
     string action = "TODO: OP " + op->name;
-    if        (op->name == "=") { action = "  POP VALUE INTO NEXT POP (TODO: differentiate between var and function)";
-    } else if (op->name == "+") { action = "  POP POP ADD PUSH";
-    } else if (op->name == "-") { action = "  POP1 POP2 POP2-POP1 PUSH";
-    } else if (op->name == "*") { action = "  POP POP MULTIPLY PUSH";
-    } else if (op->name == "/") { action = "  POP1 POP2 POP2/POP1 PUSH";
-    } else if (op->name == "%") { action = "  POP1 POP2 POP2%POP1 PUSH";
-    } else if (op->name == "&") { action = "  POP POP AND PUSH";
-    } else if (op->name == "|") { action = "  POP POP OR PUSH";
-    } else if (op->name == "^") { action = "  POP POP XOR PUSH";
-    } else if (op->name == "!") { action = "  POP COUNT PUSH";
-    } else if (op->name == "?") { action = "  POP POP COMPARE_EQUAL PUSH";
-    } else if (op->name == "<") { action = "  POP POP COMPARE_LESS_THAN PUSH";
-    } else if (op->name == "?<"){ action = "  POP POP COMPARE_LESS_THAN_EQUAL PUSH";
-    } else if (op->name == ">") { action = "  POP POP COMPARE_GREATER_THAN PUSH";
-    } else if (op->name == "?>"){ action = "  POP POP COMPARE_GREATER_THAN_EQUAL PUSH";
+    if        (op->name == CHAR_STR(LEX_ASSIGNMENT)){ action = "  POP VALUE INTO NEXT POP (TODO: differentiate between var and function)";
+    } else if (op->name == CHAR_STR(LEX_ADD))       { action = "  POP POP ADD PUSH";
+    } else if (op->name == CHAR_STR(LEX_SUB))       { action = "  POP1 POP2 POP2-POP1 PUSH";
+    } else if (op->name == CHAR_STR(LEX_MULTIPLY))  { action = "  POP POP MULTIPLY PUSH";
+    } else if (op->name == CHAR_STR(LEX_DIVIDE))    { action = "  POP1 POP2 POP2/POP1 PUSH";
+    } else if (op->name == CHAR_STR(LEX_MODULUS))   { action = "  POP1 POP2 POP2%POP1 PUSH";
+    } else if (op->name == CHAR_STR(LEX_AND))       { action = "  POP POP AND PUSH";
+    } else if (op->name == CHAR_STR(LEX_OR))        { action = "  POP POP OR PUSH";
+    } else if (op->name == CHAR_STR(LEX_XOR))       { action = "  POP POP XOR PUSH";
+    } else if (op->name == CHAR_STR(LEX_COUNT))     { action = "  POP COUNT PUSH";
+    } else if (op->name == CHAR_STR(LEX_EQ))        { action = "  POP POP COMPARE_EQUAL PUSH";
+    } else if (op->name == CHAR_STR(LEX_LT))        { action = "  POP POP COMPARE_LESS_THAN PUSH";
+    } else if (op->name == LEX_LTE)                 { action = "  POP POP COMPARE_LESS_THAN_EQUAL PUSH";
+    } else if (op->name == CHAR_STR(LEX_GT))        { action = "  POP POP COMPARE_GREATER_THAN PUSH";
+    } else if (op->name == LEX_GTE)                 { action = "  POP POP COMPARE_GREATER_THAN_EQUAL PUSH";
+    } else if (op->name == CHAR_STR(LEX_DOT))       { action = "  <<DOT SEEN>>";
+    } else {
+        DERR("Not yet implemented: " + action);
     }
     DEBUG( OFFSET(op->depth) << action; )
 }
@@ -79,20 +82,35 @@ void gen_expression(SHARED(AST) ast) {
         current = current->next;
     }
     DEBUG( OFFSET(current->depth) << " INIT EXPRESSION STACK"; )
+    bool hasDotPrior = false;
     while (current) {
+        // Check for consecutive DOT operators.
+        bool hasNewDotPrior = (current->type == AST_OPERATOR && current->name == ".");
+        if (hasDotPrior && hasNewDotPrior) {
+            DERR("Consecutive DOT operators detected. DOT operators must be followed by an identifier.");
+        }
+
         switch (current->type) {
             case AST_EXPRESSION:    gen_expression(current->alt);                                       break;
-            case AST_IDENTIFIER:
+            case AST_IDENTIFIER:    DEBUG( OFFSET(current->depth) << "  PUSH " << current->name << " ONTO EXPRESSION STACK"; );
+                                    if (hasDotPrior) {
+                                        DEBUG( OFFSET(current->depth) << "  POP POP APPLY_DOT_OPERATOR PUSH"; )
+                                        hasDotPrior = false;
+                                    }
+                                    break;
             case AST_BINARY:
-            case AST_STRING:        DEBUG( OFFSET(current->depth) << "  PUSH " << current->name << " ONTO EXPRESSION STACK"; )     break;
+            case AST_STRING:        DEBUG( OFFSET(current->depth) << "  PUSH \"" << current->name << "\" ONTO EXPRESSION STACK"; )     break;
             case AST_LONG:          DEBUG( OFFSET(current->depth) << "  PUSH " << current->numeric_value.l << " ONTO EXPRESSION STACK"; )     break;
             case AST_DOUBLE:        DEBUG( OFFSET(current->depth) << "  PUSH " << current->numeric_value.d << " ONTO EXPRESSION STACK"; )     break;
             case AST_NULL:          DEBUG( OFFSET(current->depth) << "  PUSH NULL ONTO EXPRESSION STACK"; )     break;
-            case AST_REFERENCE:     DEBUG( OFFSET(current->depth) << "  TODO: REF " << current->name; )     break;
+            case AST_REFERENCE:     gen_expression(current->alt);
+                                    DEBUG( OFFSET(current->depth) << "  POP POP APPLY_REFERENCE PUSH"; )
+                                    break;
             case AST_OPERATOR:      gen_operator(current); break;
             default:
                 DERR("Unknown EXPRESSION. This is probably a bug.");
         }
+        hasDotPrior = hasNewDotPrior;
         current = current->next;
     }
     DEBUG( OFFSET(ast->depth) << " PUSH EXPRESSION STACK IF PARENT STACK"; )

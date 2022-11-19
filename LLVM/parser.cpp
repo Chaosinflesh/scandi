@@ -68,7 +68,7 @@ FN( parse_expression ) {
         } else if (token->type == TOK_OPERATOR && token->s_val == CHAR_STR(LEX_NEGATE_END)) {
             item = SHARE(AST, AST_OPERATOR, CHAR_STR(LEX_SUB), parent->depth, false);
         } else if (token->type == TOK_OPERATOR && token->s_val == CHAR_STR(LEX_REFERENCE_BEGIN)) {
-            item = SHARE(AST, AST_OPERATOR, CHAR_STR(LEX_REFERENCE_BEGIN), parent->depth, false);
+            item = SHARE(AST, AST_REFERENCE, "ref_" + std::to_string(token->pos), parent->depth, false);
             ref_end = end - 1;
             while (ref_end > token && (ref_end->type != TOK_OPERATOR || ref_end->s_val != CHAR_STR(LEX_REFERENCE_END))) {
                 ref_end--;
@@ -98,7 +98,7 @@ FN( parse_expression ) {
 
         // If we need to add a sub-expression. Gets added to ->alt so as to not pollute ->next space.
         if (ref_end != token) {
-            auto exp = SHARE(AST, AST_REFERENCE, "ref_" + std::to_string(token->pos), parent->depth, false);
+            auto exp = SHARE(AST, AST_EXPRESSION, "exp_" + std::to_string(token->pos), parent->depth, false);
             exp->parent = parent;
             next->alt = std::move(exp);
             parse_expression(token + 1, ref_end, next->alt);

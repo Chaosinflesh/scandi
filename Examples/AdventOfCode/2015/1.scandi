@@ -4,6 +4,7 @@
 ` Copyright: Neil Bradley
 ` License: All rights reserved.
 
+{this.is.a.test testing}
 {stream.readline readline}
 {stream.writeline writeline}
 {system.stdin in}
